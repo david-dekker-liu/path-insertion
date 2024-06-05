@@ -3,8 +3,8 @@ from datetime import timedelta, time
 from datetime import datetime
 import numpy as np
 import time as tm
-import headway_functions
-import path_insertion
+import src.headway_functions as headway_functions
+import src.path_insertion as path_insertion
 
 
 def get_timetable(time_from, time_to, locations):

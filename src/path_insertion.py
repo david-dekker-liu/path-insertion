@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from datetime import timedelta
-import free_space_detection
-import timetable_creation
-import interval_utils as intutils
-from intervals import LinkedInterval, Interval
+import src.free_space_detection as free_space_detection
+import src.timetable_creation as timetable_creation
+import src.interval_utils as intutils
+from src.intervals import LinkedInterval, Interval
 
 # TODO Test first if it is a predefined exception,
 # TODO i.e., single-track line with smaller blocks.

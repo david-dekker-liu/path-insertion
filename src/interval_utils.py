@@ -1,4 +1,4 @@
-from intervals import LinkedInterval, Interval
+from src.intervals import LinkedInterval, Interval
 
 
 # Interpolate one time ... guess I did need it after all
