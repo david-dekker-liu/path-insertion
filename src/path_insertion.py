@@ -215,5 +215,5 @@ if __name__ == '__main__':
             entering_station_candidates_towards_stop[entering_track] = intutils.merge_intervals(
                 entering_station_candidates_towards_stop[entering_track])
 
-            entering_station_candidates_towards_runthrough[entering_track] = merge_intervals(
+            entering_station_candidates_towards_runthrough[entering_track] = intutils.merge_intervals(
                 entering_station_candidates_towards_runthrough[entering_track])
