@@ -229,3 +229,34 @@ def evaluate_running_times(list_of_intervals, free_spaces, d):
             output += [LinkedInterval(new_end, free_space[1][1], new_orig_end, new_orig_end)]
 
     return output
+
+
+def extend_parked_times(lint_list, free_spaces):
+    free_spaces_first_column = [Interval(x[0], x[1]) for x in free_spaces]
+    intersected_intervals = intersect_intervals(lint_list, free_spaces_first_column)
+    output = []
+
+    for i in range(len(intersected_intervals)):
+        lint = intersected_intervals[i]
+
+        # ... kansloos ...
+        while free_spaces[0][1] <= lint.start:
+            free_spaces = free_spaces[1:]
+
+        free_space = free_spaces[0]
+
+        output += [lint]
+
+        if i < len(intersected_intervals) - 1:
+            next_interval_start = intersected_intervals[i+1].start
+
+            # Determine possible bonus interval (i.e. slow speed within free space)
+            if lint.end < free_space[1]:
+                bonus_start = lint.end
+                bonus_end = min(next_interval_start, free_space[1])
+                output += [LinkedInterval(bonus_start, bonus_end, lint.orig_end, lint.orig_end)]
+        elif free_space[1] > lint.end:
+            output += [LinkedInterval(lint.end, free_space[1], lint.orig_end, lint.orig_end)]
+
+
+    return output
