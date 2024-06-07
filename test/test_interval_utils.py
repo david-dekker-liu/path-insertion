@@ -9,6 +9,14 @@ def d(x):
     return datetime.strptime(x, "%Y-%m-%d %H:%M:%S")
 
 
+def e(x):
+    return "2021-05-11 " + x + ":00"
+
+
+def d2(x):
+    return datetime.strptime(e(x), "%Y-%m-%d %H:%M:%S")
+
+
 def s(x):
     return x.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -170,4 +178,90 @@ def test_merge_intervals():
     assert s(merged[5].end) == "2021-05-08 18:30:00"
     assert s(merged[5].orig_start) == "2021-05-08 14:45:00"
     assert s(merged[5].orig_end) == "2021-05-08 15:15:00"
-    
+
+
+def test_evaluate_running_times():
+    lint_list = [
+        LinkedInterval(d2("12:00"), d2("13:00"), d2("11:00"), d2("12:00")),
+        LinkedInterval(d2("14:00"), d2("15:00"), d2("13:00"), d2("14:00")),
+        LinkedInterval(d2("16:00"), d2("17:00"), d2("15:00"), d2("16:00")),
+        LinkedInterval(d2("18:00"), d2("19:00"), d2("17:00"), d2("18:00")),
+        LinkedInterval(d2("20:00"), d2("21:00"), d2("19:00"), d2("20:00")),
+        LinkedInterval(d2("22:00"), d2("23:00"), d2("21:00"), d2("22:00")),
+    ]
+    free_spaces = [
+        ((d2("11:45"), d2("13:45")), (d2("12:00"), d2("13:30"))),
+        ((d2("14:30"), d2("15:30")), (d2("14:40"), d2("16:30"))),
+        ((d2("16:30"), d2("18:10")), (d2("16:45"), d2("18:30"))),
+        ((d2("18:30"), d2("19:00")), (d2("18:35"), d2("19:10"))),
+        ((d2("20:15"), d2("22:30")), (d2("20:45"), d2("23:30")))
+    ]
+
+    output = intutils.evaluate_running_times(lint_list, free_spaces, 15*60)
+
+    # assert len(output) == 9
+
+    assert s(output[0].start) == e("12:15")
+    assert s(output[0].end) == e("13:15")
+    assert s(output[0].orig_start) == e("11:00")
+    assert s(output[0].orig_end) == e("12:00")
+
+    assert s(output[1].start) == e("13:15")
+    assert s(output[1].end) == e("13:30")
+    assert s(output[1].orig_start) == e("12:00")
+    assert s(output[1].orig_end) == e("12:00")
+
+    assert s(output[2].start) == e("14:45")
+    assert s(output[2].end) == e("15:15")
+    assert s(output[2].orig_start) == e("13:30")
+    assert s(output[2].orig_end) == e("14:00")
+
+    assert s(output[3].start) == e("15:15")
+    assert s(output[3].end) == e("16:30")
+    assert s(output[3].orig_start) == e("14:00")
+    assert s(output[3].orig_end) == e("14:00")
+
+    assert s(output[4].start) == e("16:45")
+    assert s(output[4].end) == e("17:15")
+    assert s(output[4].orig_start) == e("15:30")
+    assert s(output[4].orig_end) == e("16:00")
+
+    assert s(output[5].start) == e("17:15")
+    assert s(output[5].end) == e("18:15")
+    assert s(output[5].orig_start) == e("16:00")
+    assert s(output[5].orig_end) == e("16:00")
+
+    assert s(output[6].start) == e("18:15")
+    assert s(output[6].end) == e("18:25")
+    assert s(output[6].orig_start) == e("17:00")
+    assert s(output[6].orig_end) == e("17:10")
+
+    assert s(output[7].start) == e("18:25")
+    assert s(output[7].end) == e("18:30")
+    assert s(output[7].orig_start) == e("17:10")
+    assert s(output[7].orig_end) == e("17:10")
+
+    assert s(output[8].start) == e("18:45")
+    assert s(output[8].end) == e("19:10")
+    assert s(output[8].orig_start) == e("17:30")
+    assert s(output[8].orig_end) == e("17:55")
+
+    assert s(output[9].start) == e("20:45")
+    assert s(output[9].end) == e("21:15")
+    assert s(output[9].orig_start) == e("19:30")
+    assert s(output[9].orig_end) == e("20:00")
+
+    assert s(output[10].start) == e("21:15")
+    assert s(output[10].end) == e("22:15")
+    assert s(output[10].orig_start) == e("20:00")
+    assert s(output[10].orig_end) == e("20:00")
+
+    assert s(output[11].start) == e("22:15")
+    assert s(output[11].end) == e("22:45")
+    assert s(output[11].orig_start) == e("21:00")
+    assert s(output[11].orig_end) == e("21:30")
+
+    assert s(output[12].start) == e("22:45")
+    assert s(output[12].end) == e("23:30")
+    assert s(output[12].orig_start) == e("21:30")
+    assert s(output[12].orig_end) == e("21:30")

@@ -1,4 +1,5 @@
 from src.intervals import LinkedInterval, Interval
+from datetime import timedelta
 
 
 # Interpolate one time ... guess I did need it after all
@@ -169,49 +170,62 @@ def close(x, y):
     return -0.000001 <= x - y <= 0.000001
 
 
-# Link an interval list on a segment track to the free spaces on that segment track
-# Returns a dict from each free space (key) to a list of all intervals that should be evaluated within this free space
-# def link_with_segments(list_of_intervals, free_space_list):
-#     return list_of_intervals, free_space_list
-
-
-
-# List of intervals is a list of quadruples (start, end, orig_start, orig_end)
+# List of intervals is a list of LinkedIntervals
 # Free spaces is a list of pairs of pairs... Good design choices lol
 def evaluate_running_times(list_of_intervals, free_spaces, d):
-    return []
-
-
-"""
-    free_spaces_first_column = [x[0] for x in free_spaces]
+    free_spaces_first_column = [Interval(x[0][0], x[0][1]) for x in free_spaces]
     intersected_intervals = intersect_intervals(list_of_intervals, free_spaces_first_column)
+    output = []
 
+    # Because of this intersection, we have a few nice properties:
+    # * We don't need to worry anymore about the start/end at the current location of the interval
+    # * There is exactly one free space that corresponds to each lint
     for i in range(len(intersected_intervals)):
-        interval = intersected_intervals[i]
+        lint = intersected_intervals[i]
 
         # ... kansloos ...
-        while free_spaces[0][0][1] <= interval[0]:
+        while free_spaces[0][0][1] <= lint.start:
             free_spaces = free_spaces[1:]
 
         free_space = free_spaces[0]
 
-        ideal_new_start = interval[0] + timedelta(0, d)
-        ideal_new_end = interval[1] + timedelta(0, d)
+        ideal_new_start = lint.start + timedelta(0, d)
+        ideal_new_end = lint.end + timedelta(0, d)
+        new_start = 0
+        new_end = 0
+        new_orig_start = 0
+        new_orig_end = 0
 
         # If the new start is within the free space, we can derive the new start of the interval easily
         if free_space[1][0] <= ideal_new_start <= free_space[1][1]:
             new_start = ideal_new_start
-            old_start = interval[0]
-            new_orig_start = interval[2]
+            new_orig_start = lint.orig_start
         # If it is before, we can only start at the free space start
         elif ideal_new_start <= free_space[1][0] <= free_space[1][1]:
             new_start = free_space[1][0]
-            old_start = new_start - d
-            new_orig_start = interpolate_single_time(interval[0], interval[1], (interval[2], interval[3]), old_start)
-        # Otherwise no point in doing anything
+            new_orig_start = interpolate_single_time(lint, new_start - timedelta(0, d))
 
-        # Analogous case for the end time...
+        if free_space[1][0] <= ideal_new_end <= free_space[1][1]:
+            new_end = ideal_new_end
+            new_orig_end = lint.orig_end
+        elif free_space[1][0] <= free_space[1][1] <= ideal_new_end:
+            new_end = free_space[1][1]
+            new_orig_end = interpolate_single_time(lint, new_end - timedelta(0, d))
+        # Otherwise, again no point in doing anything
+
+        if new_start != 0 and new_end != 0 and new_start < new_end:
+            output += [LinkedInterval(new_start, new_end, new_orig_start, new_orig_end)]
+
         if i < len(intersected_intervals) - 1:
             next_interval = intersected_intervals[i+1]
-            # TODO bonus interval bepalen
-"""
+            possible_end_time_next_interval = next_interval.start + timedelta(0, d)
+
+            # Determine possible bonus interval (i.e. slow speed within free space)
+            if new_end < free_space[1][1]:
+                bonus_start = new_end
+                bonus_end = min(possible_end_time_next_interval, free_space[1][1])
+                output += [LinkedInterval(bonus_start, bonus_end, new_orig_end, new_orig_end)]
+        elif new_end < free_space[1][1]:
+            output += [LinkedInterval(new_end, free_space[1][1], new_orig_end, new_orig_end)]
+
+    return output
