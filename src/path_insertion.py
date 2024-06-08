@@ -102,21 +102,21 @@ def get_station_track_list(df, loc):
 
 if __name__ == '__main__':
     # Time frame to be considered
-    TIME_FROM = "2021-05-10 20:00"
-    TIME_TO = "2021-05-12 10:00"
+    TIME_FROM = "2021-01-20 01:00"
+    TIME_TO = "2021-01-20 23:00"
     TIME_FROM_DATETIME = datetime.strptime(TIME_FROM, "%Y-%m-%d %H:%M")
     TIME_TO_DATETIME = datetime.strptime(TIME_TO, "%Y-%m-%d %H:%M")
 
     # Manual list of vertices to be explored
     # Derive the filtered t21 timetable, export it and detect Parallelfahrts
-    vertices = ["Lp", "Lgm", "Gi", "Nh", "Kms", "Fi", "Nr", "Nrgb", "Åby", "Gtå", "Kon", "Åba", "Jår", "Ebg", "Nk", "Ssa", "Tba", "Lre", "Vhd", "Hlö", "Jn"]
+    train_route = ["Gsv", "Or1", "Or", "Gbm", "Agb", "Sue", "Bhs", "Nöe", "Nol", "Än", "Alh", "Les", "Tbn", "Vpm", "Veas", "Thn", "Öx", "Bjh", "Fdf", "Brl", "Skbl", "Rås", "Drt", "Bäf", "Ed", "Mon", "Ko"]
 
-    t21 = timetable_creation.get_timetable(TIME_FROM, TIME_TO, vertices)
+    t21 = timetable_creation.get_timetable(TIME_FROM, TIME_TO, train_route)
     t21.to_csv("../data/filtered_t21.csv", sep=";")
 
     # timetable_creation.verify_timetable_consistency(t21)
 
-    train_to_insert = 6424
+    train_to_insert = 45693
     free_space_dict = free_space_detection.get_free_spaces(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME)
 
     technical_running_times = pd.read_csv("../data/t21_technical_running_times.csv")
@@ -132,13 +132,18 @@ if __name__ == '__main__':
         running_time[(row["stn_id_to"], row["stn_id_from"], "s", "r")] = row["rt_forw_sp"]
         running_time[(row["stn_id_to"], row["stn_id_from"], "s", "s")] = row["rt_forw_ss"]
 
+    # Get minimum running time for the full path
+    min_time = 0
+    min_time += running_time[("Gsv", "Or1", "s", "r")]
+    min_time += running_time[("Mon", "Ko", "r", "s")]
+    for i in range(len(train_route) - 3):
+        min_time += running_time[(train_route[i+1], train_route[i+2], "r", "r")]
+    print(f"Minimum travel time for profile {speed_profile} on Gsv-Ko: {min_time}")
 
     # For each single-track segment, obtain the free-space list
     # The free_space_dict maps from segment keys to a list of free slots
     # In the single track case, these are rectangles indicated by their start- and endtime
-    train_route = ["Lp", "Lgm", "Gi", "Nh", "Kms", "Fi", "Nr", "Nrgb", "Åby", "Gtå", "Kon", "Åba", "Jår", "Ebg", "Nk", "Ssa", "Tba", "Lre", "Vhd", "Hlö", "Jn"]
-
-    usable_tracks = {("Lp", "Lgm"): ["U"], ("Lgm", "Gi"): ["U"], ("Gi", "Nh"): ["U"], ("Nh", "Kms"): ["U"], ("Kms", "Fi"): ["U"], ("Fi", "Nr"): ["U"], ("Nr", "Nrgb"): ["U"], ("Nrgb", "Åby"): ["U"], ("Åby", "Gtå"): ["E"], ("Gtå", "Kon"): ["E"], ("Kon", "Åba"): ["E"], ("Åba", "Jår"): ["E"], ("Jår", "Ebg"): ["E"], ("Ebg", "Nk"): ["E"], ("Nk", "Ssa"): ["E"], ("Ssa", "Tba"): ["E"], ("Tba", "Lre"): ["E"], ("Lre", "Vhd"): ["E"], ("Vhd", "Hlö"): ["E"], ("Hlö", "Jn"): ["E"]}
+    usable_tracks = {("Gsv", "Or1"): ["U"], ("Or1", "Or"): ["E"], ("Or", "Gbm"): ["A"], ("Gbm", "Agb"): ["U"], ("Agb", "Sue"): ["U"], ("Sue", "Bhs"): ["U"], ("Bhs", "Nöe"): ["U"], ("Nöe", "Nol"): ["U"], ("Nol", "Än"): ["U"], ("Än", "Alh"): ["U"], ("Alh", "Les"): ["U"], ("Les", "Tbn"): ["U"], ("Tbn", "Vpm"): ["U"], ("Vpm", "Veas"): ["U"], ("Veas", "Thn"): ["U"], ("Thn", "Öx"): ["U"], ("Öx", "Bjh"): ["E"], ("Bjh", "Fdf"): ["E"], ("Fdf", "Brl"): ["E"], ("Brl", "Skbl"): ["E"], ("Skbl", "Rås"): ["E"], ("Rås", "Drt"): ["E"], ("Drt", "Bäf"): ["E"], ("Bäf", "Ed"): ["E"], ("Ed", "Mon"): ["E"], ("Mon", "Ko"): ["E"]}
 
     print(free_space_dict.keys())
     first_loc = train_route[0]
@@ -154,7 +159,7 @@ if __name__ == '__main__':
     # Initialize the dynamic-ish program at the start location
     # Initial run-through is impossible, all free spaces at all tracks give possible departures
     for station_track in get_station_track_list(t21, first_loc):
-        station_parked_occupations[(first_loc, station_track)] = [(x[0], x[1], x[0], x[1]) for x in free_space_dict[get_key(first_loc, None, station_track)]]
+        station_parked_occupations[(first_loc, station_track)] = [LinkedInterval(x[0], x[1], x[0], x[1]) for x in free_space_dict[get_key(first_loc, None, station_track)]]
         station_runthrough_occupations[(first_loc, station_track)] = []
 
     # Now traverse all given segments
@@ -175,12 +180,14 @@ if __name__ == '__main__':
         for station_track in get_station_track_list(t21, current_vertex):
             # Filter the theoretically possible tracks by the allowed tracks (i.e., only use U northbound)
             allowed_next_tracks = [v for v in allowed_movements_at_arrival[(current_vertex, "nananan", current_vertex, next_vertex, station_track)] if v in usable_tracks[(current_vertex, next_vertex)]]
+            print(current_vertex, station_track, allowed_next_tracks)
 
             for next_track in allowed_next_tracks:
                 if next_track not in entering_main_segment_candidates_after_stop.keys():
                     entering_main_segment_candidates_after_stop[next_track] = []
                     entering_main_segment_candidates_after_runthrough[next_track] = []
 
+                print(station_parked_occupations[(current_vertex, station_track)])
                 entering_main_segment_candidates_after_stop[next_track] += [intutils.intersect_intervals(station_parked_occupations[(current_vertex, station_track)], free_space_dict[get_transition_key(current_vertex, next_vertex, station_track, next_track, False)])]
 
                 entering_main_segment_candidates_after_runthrough[next_track] += [intutils.intersect_intervals(station_runthrough_occupations[(current_vertex, station_track)], free_space_dict[
