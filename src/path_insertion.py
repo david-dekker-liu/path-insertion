@@ -86,17 +86,17 @@ def get_transition_key(orig, dest, station_track_id, segment_track_id, arriving)
 # for single-track, an arbitrary orientation is chosen,
 # so that is the only occasion where an (oriented) segment may not be found (TODO verify again)
 def get_segment_track_list(df, loc_from, loc_to):
-    expected_result = df[(df["stn_id_from"] == loc_from) & (df["stn_id_to"] == loc_to)]["line_track_id"].tolist()
+    expected_result = df[(df["stn_id_from"] == loc_from) & (df["stn_id_to"] == loc_to)]["line_track_id"].drop_duplicates().tolist()
     if len(expected_result) != 0:
         return expected_result
     else:
-        return df[(df["stn_id_to"] == loc_from) & (df["stn_id_from"] == loc_to)]["line_track_id"].tolist()
+        return df[(df["stn_id_to"] == loc_from) & (df["stn_id_from"] == loc_to)]["line_track_id"].drop_duplicates().tolist()
 
 
 # Returns all track ids that are used in a station in input dataframe
 # Only considers first station in pairs
 def get_station_track_list(df, loc):
-    expected_result = df[(df["orig"] == loc) & (df["dest"].isnull())]["track_id"].tolist()
+    expected_result = df[(df["orig"] == loc) & (df["dest"].isnull())]["track_id"].drop_duplicates().tolist()
     return expected_result
 
 
@@ -159,7 +159,7 @@ if __name__ == '__main__':
     # Initialize the dynamic-ish program at the start location
     # Initial run-through is impossible, all free spaces at all tracks give possible departures
     for station_track in get_station_track_list(t21, first_loc):
-        station_parked_occupations[(first_loc, station_track)] = [LinkedInterval(x[0], x[1], x[0], x[1]) for x in free_space_dict[get_key(first_loc, None, station_track)]]
+        station_parked_occupations[(first_loc, station_track)] = [LinkedInterval(x.start, x.end, x.start, x.end) for x in free_space_dict[get_key(first_loc, None, station_track)]]
         station_runthrough_occupations[(first_loc, station_track)] = []
 
     # Now traverse all given segments
@@ -176,6 +176,7 @@ if __name__ == '__main__':
         entering_station_candidates_towards_stop = {}
         entering_station_candidates_towards_runthrough = {}
 
+        print(get_station_track_list(t21, current_vertex))
         # First, intersect track possibilities with transition free spaces
         for station_track in get_station_track_list(t21, current_vertex):
             # Filter the theoretically possible tracks by the allowed tracks (i.e., only use U northbound)
@@ -187,7 +188,7 @@ if __name__ == '__main__':
                     entering_main_segment_candidates_after_stop[next_track] = []
                     entering_main_segment_candidates_after_runthrough[next_track] = []
 
-                print(station_parked_occupations[(current_vertex, station_track)])
+                # print(station_parked_occupations[(current_vertex, station_track)])
                 entering_main_segment_candidates_after_stop[next_track] += [intutils.intersect_intervals(station_parked_occupations[(current_vertex, station_track)], free_space_dict[get_transition_key(current_vertex, next_vertex, station_track, next_track, False)])]
 
                 entering_main_segment_candidates_after_runthrough[next_track] += [intutils.intersect_intervals(station_runthrough_occupations[(current_vertex, station_track)], free_space_dict[
@@ -210,10 +211,10 @@ if __name__ == '__main__':
 
         for next_track in entering_main_segment_candidates_after_stop.keys():
             # Determine interval lists for the next station by extending with the appropriate running time
-            leaving_segment_list_ss = intutils.evaluate_running_times(entering_main_segment_candidates_after_stop, free_space_dict[get_key(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "s", "s")])
-            leaving_segment_list_sr = intutils.evaluate_running_times(entering_main_segment_candidates_after_stop, free_space_dict[get_key(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "s", "r")])
-            leaving_segment_list_rs = intutils.evaluate_running_times(entering_main_segment_candidates_after_runthrough, free_space_dict[get_key(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "r", "s")])
-            leaving_segment_list_rr = intutils.evaluate_running_times(entering_main_segment_candidates_after_runthrough, free_space_dict[get_key(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "r", "r")])
+            leaving_segment_list_ss = intutils.evaluate_running_times(entering_main_segment_candidates_after_stop[next_track], free_space_dict[get_key(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "s", "s")])
+            leaving_segment_list_sr = intutils.evaluate_running_times(entering_main_segment_candidates_after_stop[next_track], free_space_dict[get_key(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "s", "r")])
+            leaving_segment_list_rs = intutils.evaluate_running_times(entering_main_segment_candidates_after_runthrough[next_track], free_space_dict[get_key(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "r", "s")])
+            leaving_segment_list_rr = intutils.evaluate_running_times(entering_main_segment_candidates_after_runthrough[next_track], free_space_dict[get_key(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "r", "r")])
 
             leaving_segment_towards_stop = intutils.merge_intervals([leaving_segment_list_rs, leaving_segment_list_ss])
             leaving_segment_towards_runthrough = intutils.merge_intervals([leaving_segment_list_rr, leaving_segment_list_sr])

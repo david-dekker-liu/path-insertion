@@ -1,4 +1,4 @@
-from src.intervals import LinkedInterval, Interval
+from src.intervals import LinkedInterval, Interval, IntervalPair
 from datetime import timedelta
 
 
@@ -99,8 +99,6 @@ def merge_intervals(lint_lists_to_merge):
             # Add the obtained interval to the output (both should be equal)
             output += [max_lint_at_start]
 
-            print(max_lint_at_start, "\n", max_lint_at_end, "\n")
-
         # Update last event, the active intervals and the pointers to the actual active ones within those
         last_event = event
 
@@ -173,7 +171,7 @@ def close(x, y):
 # List of intervals is a list of LinkedIntervals
 # Free spaces is a list of pairs of pairs... Good design choices lol
 def evaluate_running_times(list_of_intervals, free_spaces, d):
-    free_spaces_first_column = [Interval(x[0][0], x[0][1]) for x in free_spaces]
+    free_spaces_first_column = [Interval(x.first_start, x.first_end) for x in free_spaces]
     intersected_intervals = intersect_intervals(list_of_intervals, free_spaces_first_column)
     output = []
 
@@ -184,7 +182,7 @@ def evaluate_running_times(list_of_intervals, free_spaces, d):
         lint = intersected_intervals[i]
 
         # ... kansloos ...
-        while free_spaces[0][0][1] <= lint.start:
+        while free_spaces[0].first_end <= lint.start:
             free_spaces = free_spaces[1:]
 
         free_space = free_spaces[0]
@@ -197,19 +195,19 @@ def evaluate_running_times(list_of_intervals, free_spaces, d):
         new_orig_end = 0
 
         # If the new start is within the free space, we can derive the new start of the interval easily
-        if free_space[1][0] <= ideal_new_start <= free_space[1][1]:
+        if free_space.second_start <= ideal_new_start <= free_space.second_end:
             new_start = ideal_new_start
             new_orig_start = lint.orig_start
         # If it is before, we can only start at the free space start
-        elif ideal_new_start <= free_space[1][0] <= free_space[1][1]:
-            new_start = free_space[1][0]
+        elif ideal_new_start <= free_space.second_start <= free_space.second_end:
+            new_start = free_space.second_start
             new_orig_start = interpolate_single_time(lint, new_start - timedelta(0, d))
 
-        if free_space[1][0] <= ideal_new_end <= free_space[1][1]:
+        if free_space.second_start <= ideal_new_end <= free_space.second_end:
             new_end = ideal_new_end
             new_orig_end = lint.orig_end
-        elif free_space[1][0] <= free_space[1][1] <= ideal_new_end:
-            new_end = free_space[1][1]
+        elif free_space.second_start <= free_space.second_end <= ideal_new_end:
+            new_end = free_space.second_end
             new_orig_end = interpolate_single_time(lint, new_end - timedelta(0, d))
         # Otherwise, again no point in doing anything
 
@@ -221,26 +219,24 @@ def evaluate_running_times(list_of_intervals, free_spaces, d):
             possible_end_time_next_interval = next_interval.start + timedelta(0, d)
 
             # Determine possible bonus interval (i.e. slow speed within free space)
-            if new_end < free_space[1][1]:
+            if new_end < free_space.second_end:
                 bonus_start = new_end
-                bonus_end = min(possible_end_time_next_interval, free_space[1][1])
+                bonus_end = min(possible_end_time_next_interval, free_space.second_end)
                 output += [LinkedInterval(bonus_start, bonus_end, new_orig_end, new_orig_end)]
-        elif new_end < free_space[1][1]:
-            output += [LinkedInterval(new_end, free_space[1][1], new_orig_end, new_orig_end)]
+        elif new_end < free_space.second_end:
+            output += [LinkedInterval(new_end, free_space.second_end, new_orig_end, new_orig_end)]
 
     return output
 
 
 def extend_parked_times(lint_list, free_spaces):
-    free_spaces_first_column = [Interval(x[0], x[1]) for x in free_spaces]
-    intersected_intervals = intersect_intervals(lint_list, free_spaces_first_column)
+    intersected_intervals = intersect_intervals(lint_list, free_spaces)
     output = []
 
     for i in range(len(intersected_intervals)):
         lint = intersected_intervals[i]
 
-        # ... kansloos ...
-        while free_spaces[0][1] <= lint.start:
+        while free_spaces[0].end <= lint.start:
             free_spaces = free_spaces[1:]
 
         free_space = free_spaces[0]
@@ -251,12 +247,11 @@ def extend_parked_times(lint_list, free_spaces):
             next_interval_start = intersected_intervals[i+1].start
 
             # Determine possible bonus interval (i.e. slow speed within free space)
-            if lint.end < free_space[1]:
+            if lint.end < free_space.end:
                 bonus_start = lint.end
-                bonus_end = min(next_interval_start, free_space[1])
+                bonus_end = min(next_interval_start, free_space.end)
                 output += [LinkedInterval(bonus_start, bonus_end, lint.orig_end, lint.orig_end)]
-        elif free_space[1] > lint.end:
-            output += [LinkedInterval(lint.end, free_space[1], lint.orig_end, lint.orig_end)]
-
+        elif free_space.end > lint.end:
+            output += [LinkedInterval(lint.end, free_space.end, lint.orig_end, lint.orig_end)]
 
     return output

@@ -1,7 +1,7 @@
 # content of test_sample.py
 from datetime import datetime
 import src.interval_utils as intutils
-from src.intervals import LinkedInterval, Interval
+from src.intervals import LinkedInterval, Interval, IntervalPair
 import pytest
 
 
@@ -147,7 +147,6 @@ def test_merge_intervals():
         ]
     ]
     merged = intutils.merge_intervals(list_of_intervals)
-    print(merged)
 
     assert s(merged[0].start) == "2021-05-08 14:30:00"
     assert s(merged[0].end) == "2021-05-08 15:00:00"
@@ -190,11 +189,11 @@ def test_evaluate_running_times():
         LinkedInterval(d2("22:00"), d2("23:00"), d2("21:00"), d2("22:00")),
     ]
     free_spaces = [
-        ((d2("11:45"), d2("13:45")), (d2("12:00"), d2("13:30"))),
-        ((d2("14:30"), d2("15:30")), (d2("14:40"), d2("16:30"))),
-        ((d2("16:30"), d2("18:10")), (d2("16:45"), d2("18:30"))),
-        ((d2("18:30"), d2("19:00")), (d2("18:35"), d2("19:10"))),
-        ((d2("20:15"), d2("22:30")), (d2("20:45"), d2("23:30")))
+        IntervalPair(d2("11:45"), d2("13:45"), d2("12:00"), d2("13:30")),
+        IntervalPair(d2("14:30"), d2("15:30"), d2("14:40"), d2("16:30")),
+        IntervalPair(d2("16:30"), d2("18:10"), d2("16:45"), d2("18:30")),
+        IntervalPair(d2("18:30"), d2("19:00"), d2("18:35"), d2("19:10")),
+        IntervalPair(d2("20:15"), d2("22:30"), d2("20:45"), d2("23:30"))
     ]
 
     output = intutils.evaluate_running_times(lint_list, free_spaces, 15*60)
@@ -275,11 +274,11 @@ def test_extend_parked_times():
         LinkedInterval(d2("22:00"), d2("23:00"), d2("21:00"), d2("22:00")),
     ]
     free_spaces = [
-        (d2("11:45"), d2("13:45")),
-        (d2("14:30"), d2("15:30")),
-        (d2("16:30"), d2("18:10")),
-        (d2("18:30"), d2("19:00")),
-        (d2("20:15"), d2("23:30"))
+        Interval(d2("11:45"), d2("13:45")),
+        Interval(d2("14:30"), d2("15:30")),
+        Interval(d2("16:30"), d2("18:10")),
+        Interval(d2("18:30"), d2("19:00")),
+        Interval(d2("20:15"), d2("23:30"))
     ]
 
     output = intutils.extend_parked_times(lint_list, free_spaces)
