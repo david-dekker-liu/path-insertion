@@ -342,3 +342,36 @@ def test_extend_parked_times():
     assert s(output[11].end) == e("23:30")
     assert s(output[11].orig_start) == e("22:00")
     assert s(output[11].orig_end) == e("22:00")
+
+
+def test_extended_intervals_weird_case():
+    lint_list = [
+        LinkedInterval(d("2021-01-20 09:19:47"), d("2021-01-20 09:20:12"), d("2021-01-20 07:46:20"), d("2021-01-20 07:46:20")),
+        LinkedInterval(d("2021-01-20 09:20:12"), d("2021-01-20 09:21:41"), d("2021-01-20 08:14:15"), d("2021-01-20 08:15:44")),
+        LinkedInterval(d("2021-01-20 10:24:03"), d("2021-01-20 10:44:38"), d("2021-01-20 08:26:56"), d("2021-01-20 08:26:56")),
+    ]
+    free_spaces = [
+        Interval(d("2021-01-20 07:00:00"), d("2021-01-20 14:00:00"))
+    ]
+
+    output = intutils.extend_parked_times(lint_list, free_spaces)
+
+    assert s(output[0].start) == "2021-01-20 09:19:47"
+    assert s(output[0].end) == "2021-01-20 09:20:12"
+    assert s(output[0].orig_start) == "2021-01-20 07:46:20"
+    assert s(output[0].orig_end) == "2021-01-20 07:46:20"
+
+    assert s(output[1].start) == "2021-01-20 09:20:12"
+    assert s(output[1].end) == "2021-01-20 09:21:41"
+    assert s(output[1].orig_start) == "2021-01-20 08:14:15"
+    assert s(output[1].orig_end) == "2021-01-20 08:15:44"
+
+    assert s(output[2].start) == "2021-01-20 09:21:41"
+    assert s(output[2].end) == "2021-01-20 10:24:03"
+    assert s(output[2].orig_start) == "2021-01-20 08:15:44"
+    assert s(output[2].orig_end) == "2021-01-20 08:15:44"
+
+    assert s(output[3].start) == "2021-01-20 10:24:03"
+    assert s(output[3].end) == "2021-01-20 14:00:00"
+    assert s(output[3].orig_start) == "2021-01-20 08:26:56"
+    assert s(output[3].orig_end) == "2021-01-20 08:26:56"

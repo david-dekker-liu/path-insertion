@@ -24,10 +24,16 @@ def intersect_intervals(linked_interval_list, interval_list):
     output = []
 
     for linked_interval in linked_interval_list:
+        if linked_interval.start == linked_interval.end:
+            print("Found bad linked input during intersection.")
+            continue
         # Continue splitting this interval as long as to-be-intersected is not completely after it
         while len(interval_list) > 0 and interval_list[0].start < linked_interval.end:
-
             interval_for_intersection = interval_list[0]
+
+            if interval_for_intersection.start == interval_for_intersection.end:
+                interval_list = interval_list[1:]
+                continue
 
             # If the linked interval is completely before the first interval in the second list, we discard it
             if interval_for_intersection.end < linked_interval.start:
@@ -36,7 +42,6 @@ def intersect_intervals(linked_interval_list, interval_list):
 
             #
             if interval_for_intersection.start <= linked_interval.start and interval_for_intersection.end <= linked_interval.end:
-
                 output += [update_time_range(linked_interval, linked_interval.start, interval_for_intersection.end)]
                 interval_list = interval_list[1:]
 
@@ -93,8 +98,17 @@ def merge_intervals(lint_lists_to_merge):
             max_lint_at_end = max(active_aligned_intervals, key=lambda lint: lint.orig_end)
 
             # We may need to split up the interval if there are two different maxima at this interval
-            if max_lint_at_start.orig_start != max_lint_at_end.orig_start or max_lint_at_start.orig_end != max_lint_at_start.orig_end:
-                raise Exception("Need to fix this case lol", max_lint_at_start, max_lint_at_end)
+
+            if max_lint_at_start.orig_end <= max_lint_at_end.orig_end and max_lint_at_start.orig_start <= max_lint_at_end.orig_start:
+                max_lint_at_start = max_lint_at_end
+            elif max_lint_at_start.orig_end >= max_lint_at_end.orig_end and max_lint_at_start.orig_start >= max_lint_at_end.orig_start:
+                max_lint_at_end = max_lint_at_start
+            else:
+                # if max_lint_at_start.orig_start != max_lint_at_end.orig_start or max_lint_at_start.orig_end != max_lint_at_start.orig_end:
+                print(active_aligned_intervals)
+                print(max_lint_at_start.orig_start, max_lint_at_end.orig_start)
+                print(max_lint_at_start.orig_end, max_lint_at_end.orig_end)
+                # raise Exception("Need to fix this case lol", max_lint_at_start, max_lint_at_end)
 
             # Add the obtained interval to the output (both should be equal)
             output += [max_lint_at_start]
@@ -147,7 +161,8 @@ def merge_intervals(lint_lists_to_merge):
             last_orig_end = lint.orig_end
             last_ratio = (lint.orig_end - lint.orig_start).seconds / (lint.end - lint.start).seconds
 
-    combined_output += [LinkedInterval(last_start, last_end, last_orig_start, last_orig_end)]
+    if len(output) > 0:
+        combined_output += [LinkedInterval(last_start, last_end, last_orig_start, last_orig_end)]
 
     #  [       ]      [               ]
     #    [   ]     []
@@ -165,7 +180,7 @@ def merge_intervals(lint_lists_to_merge):
 
 
 def close(x, y):
-    return -0.000001 <= x - y <= 0.000001
+    return -0.1 <= x - y <= 0.1
 
 
 # List of intervals is a list of LinkedIntervals
@@ -181,11 +196,18 @@ def evaluate_running_times(list_of_intervals, free_spaces, d):
     for i in range(len(intersected_intervals)):
         lint = intersected_intervals[i]
 
+        if lint.start == lint.end:
+            continue
+
         # ... kansloos ...
         while free_spaces[0].first_end <= lint.start:
             free_spaces = free_spaces[1:]
 
         free_space = free_spaces[0]
+
+        if free_space.first_start == free_space.first_end:
+            print("Found bad input in runtime extension free spaces.")
+            continue
 
         ideal_new_start = lint.start + timedelta(0, d)
         ideal_new_end = lint.end + timedelta(0, d)
@@ -219,11 +241,11 @@ def evaluate_running_times(list_of_intervals, free_spaces, d):
             possible_end_time_next_interval = next_interval.start + timedelta(0, d)
 
             # Determine possible bonus interval (i.e. slow speed within free space)
-            if new_end < free_space.second_end:
+            if new_end != 0 and new_end < free_space.second_end:
                 bonus_start = new_end
                 bonus_end = min(possible_end_time_next_interval, free_space.second_end)
                 output += [LinkedInterval(bonus_start, bonus_end, new_orig_end, new_orig_end)]
-        elif new_end < free_space.second_end:
+        elif new_end != 0 and new_end < free_space.second_end:
             output += [LinkedInterval(new_end, free_space.second_end, new_orig_end, new_orig_end)]
 
     return output
@@ -241,17 +263,30 @@ def extend_parked_times(lint_list, free_spaces):
 
         free_space = free_spaces[0]
 
-        output += [lint]
+        if free_space.start == free_space.end:
+            print("Found bad input in parktime extension free spaces.")
+            continue
 
-        if i < len(intersected_intervals) - 1:
-            next_interval_start = intersected_intervals[i+1].start
+        if lint.orig_end != lint.orig_start:
+            output += [lint]
 
-            # Determine possible bonus interval (i.e. slow speed within free space)
-            if lint.end < free_space.end:
-                bonus_start = lint.end
+            if i < len(intersected_intervals) - 1:
+                next_interval_start = intersected_intervals[i+1].start
+
+                if lint.end < free_space.end:
+                    bonus_start = lint.end
+                    bonus_end = min(next_interval_start, free_space.end)
+                    if bonus_end > bonus_start:
+                        output += [LinkedInterval(bonus_start, bonus_end, lint.orig_end, lint.orig_end)]
+            elif free_space.end > lint.end:
+                output += [LinkedInterval(lint.end, free_space.end, lint.orig_end, lint.orig_end)]
+        else:
+            if i < len(intersected_intervals) - 1:
+                next_interval_start = intersected_intervals[i + 1].start
                 bonus_end = min(next_interval_start, free_space.end)
-                output += [LinkedInterval(bonus_start, bonus_end, lint.orig_end, lint.orig_end)]
-        elif free_space.end > lint.end:
-            output += [LinkedInterval(lint.end, free_space.end, lint.orig_end, lint.orig_end)]
+                output += [LinkedInterval(lint.start, bonus_end, lint.orig_end, lint.orig_end)]
+            else:
+                output += [LinkedInterval(lint.start, free_space.end, lint.orig_end, lint.orig_end)]
+
 
     return output

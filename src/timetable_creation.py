@@ -33,6 +33,7 @@ def get_timetable(time_from, time_to, locations):
 
     df = pd.merge(df_input, df_running_specs, on="train_ix")
     df = df[df["orig"].isin(locations)]
+
     print("Finished joining input tables")
 
     # All "start at station" and "terminate at station" events are hereby removed
@@ -68,19 +69,23 @@ def get_timetable(time_from, time_to, locations):
 
     print("Finished adjusting start times")
 
-    df = df[((df["time_start_corrected"] >= time_from_datetime_min10) & (df["time_start_corrected"] <= time_to_datetime_plus10))
-          | ((df["time_end_corrected"]   >= time_from_datetime_min10) & (df["time_end_corrected"]   <= time_to_datetime_plus10))
-          | ((df["time_start_corrected"] <= time_from_datetime_min10) & (df["time_end_corrected"]   >= time_to_datetime_plus10)) ]
-
-    df = df[df["orig"].isin(locations) | df["dest"].isin(locations)]
     df["segment_key"] = df.apply(lambda row: path_insertion.get_key(row["orig"], row["dest"], row["track_id"]), axis=1)
     df["segment_type"] = df.apply(lambda row: path_insertion.get_segment_type_from_row(row), axis=1)
     df["min_headway_before"] = df.apply(lambda row: headway_functions.headway_before(row), axis=1)
     df["min_headway_after"] = df.apply(lambda row: headway_functions.headway_after(row), axis=1)
 
+    df = df[df["orig"].isin(locations) | df["dest"].isin(locations)]
+
+    df_filtered = df[((df["time_start_corrected"] >= time_from_datetime_min10) & (
+                df["time_start_corrected"] <= time_to_datetime_plus10))
+            | ((df["time_end_corrected"] >= time_from_datetime_min10) & (
+                df["time_end_corrected"] <= time_to_datetime_plus10))
+            | ((df["time_start_corrected"] <= time_from_datetime_min10) & (
+                df["time_end_corrected"] >= time_to_datetime_plus10))]
+
     print("Completed preprocessing of T21\n")
 
-    return df
+    return df, df_filtered
 
 
 # Example of conflicting track numbers:

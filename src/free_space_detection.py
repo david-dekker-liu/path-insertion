@@ -4,13 +4,16 @@ import numpy as np
 from intervals import Interval, IntervalPair
 
 
-def get_free_spaces(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME):
+def get_free_spaces(full_t21, t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME):
     free_space_dict = {}
     # Get all keys that belong to double track / single track / stations
-    double_track_segments = t21[t21["segment_type"] == "multiple_block_segments"][
+
+    double_track_segments = full_t21[full_t21["segment_type"] == "multiple_block_segments"][
         "segment_key"].drop_duplicates().tolist()
-    single_track_segments = t21[t21["segment_type"] == "single_block_segment"]["segment_key"].drop_duplicates().tolist()
-    station_segments = t21[t21["segment_type"] == "station"]["segment_key"].drop_duplicates().tolist()
+    single_track_segments = full_t21[full_t21["segment_type"] == "single_block_segment"]["segment_key"].drop_duplicates().tolist()
+    station_segments = full_t21[full_t21["segment_type"] == "station"]["segment_key"].drop_duplicates().tolist()
+
+    print("tester", full_t21[(full_t21["orig"] == "Fdf") & full_t21["track_id"] == "3"])
 
     for seg_k in single_track_segments:
         curr_orig, curr_dest = seg_k.split("_")[0].split("-")
@@ -43,7 +46,7 @@ def get_free_spaces(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME):
         # Furthermore, any free space intersecting only one of the endpoints is also missed,
         # so these are included as well
         if len(free_space_start) == 0:
-            free_space_dict[seg_k] = [Interval(pd.to_datetime(TIME_FROM_DATETIME), pd.to_datetime(TIME_TO_DATETIME))]
+            free_space_dict[seg_k] = [IntervalPair(pd.to_datetime(TIME_FROM_DATETIME), pd.to_datetime(TIME_TO_DATETIME), pd.to_datetime(TIME_FROM_DATETIME), pd.to_datetime(TIME_TO_DATETIME))]
         else:
             first_blockage_start = relevant_timetable_merged.iloc[0][
                                                                 "time_start_corrected"] - pd.to_timedelta(
@@ -60,7 +63,7 @@ def get_free_spaces(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME):
                 free_space_start = free_space_start + [last_blockage_end]
                 free_space_end = free_space_end + [pd.to_datetime(TIME_TO_DATETIME)]
 
-            free_space_dict[seg_k] = [Interval(x, y) for x, y in list(zip(free_space_start, free_space_end))]
+            free_space_dict[seg_k] = [IntervalPair(x, y, x, y) for x, y in list(zip(free_space_start, free_space_end)) if x < y]
 
         print(seg_k, free_space_dict[seg_k])
 
@@ -183,8 +186,8 @@ def get_free_spaces(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME):
             free_space_dict[seg_k] = [IntervalPair(w, x, y, z) for w, x, y, z in list(zip(free_space_start_orig, free_space_end_orig, free_space_start_dest, free_space_end_dest))]
         print(seg_k, free_space_dict[seg_k])
 
-    t21["train_key"] = t21.apply(lambda x: x["date"] + "_" + str(x["train_ix"]), axis=1)
-    t21_sorted = t21.sort_values(["train_key", "time_end"])
+    full_t21["train_key"] = full_t21.apply(lambda x: x["date"] + "_" + str(x["train_ix"]), axis=1)
+    t21_sorted = full_t21.sort_values(["train_key", "time_end"])
     t21_transitions = pd.concat([t21_sorted, t21_sorted.shift(-1).add_prefix("next_")], axis=1)
     t21_transitions = t21_transitions[t21_transitions["train_key"] == t21_transitions["next_train_key"]]
 
