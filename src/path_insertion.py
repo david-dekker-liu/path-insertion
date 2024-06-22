@@ -109,6 +109,7 @@ def get_station_track_list(df, loc):
 
 
 if __name__ == '__main__':
+    fullstart = time.time()
     # Time frame to be considered
     TIME_FROM = "2021-01-20 07:00"
     TIME_TO = "2021-01-20 14:00"
@@ -153,7 +154,7 @@ if __name__ == '__main__':
     # In the single track case, these are rectangles indicated by their start- and endtime
     usable_tracks = {("Gsv", "Or1"): ["U"], ("Or1", "Or"): ["E"], ("Or", "Gbm"): ["A"], ("Gbm", "Agb"): ["U"], ("Agb", "Sue"): ["U"], ("Sue", "Bhs"): ["U"], ("Bhs", "Nöe"): ["U"], ("Nöe", "Nol"): ["U"], ("Nol", "Än"): ["U"], ("Än", "Alh"): ["U"], ("Alh", "Les"): ["U"], ("Les", "Tbn"): ["U"], ("Tbn", "Vpm"): ["U"], ("Vpm", "Veas"): ["U"], ("Veas", "Thn"): ["U"], ("Thn", "Öx"): ["U"], ("Öx", "Bjh"): ["E"], ("Bjh", "Fdf"): ["E"], ("Fdf", "Brl"): ["E"], ("Brl", "Skbl"): ["E"], ("Skbl", "Rås"): ["E"], ("Rås", "Drt"): ["E"], ("Drt", "Bäf"): ["E"], ("Bäf", "Ed"): ["E"], ("Ed", "Mon"): ["E"], ("Mon", "Ko"): ["E"]}
 
-    print(free_space_dict.keys())
+    # print(free_space_dict.keys())
     first_loc = train_route[0]
 
     station_parked_occupations = {}
@@ -165,6 +166,7 @@ if __name__ == '__main__':
     allowed_movements_at_arrival = get_allowed_movements_at_arrival()
 
     start = time.time()
+    print("preprocessing: ", start-fullstart)
 
     # Initialize the dynamic-ish program at the start location
     # Initial run-through is impossible, all free spaces at all tracks give possible departures
@@ -178,7 +180,7 @@ if __name__ == '__main__':
         current_vertex = train_route[count]
         next_vertex = train_route[count+1]
 
-        print("Current vertex", current_vertex, "with tracks", get_station_track_list(t21, current_vertex))
+        # print("Current vertex", current_vertex, "with tracks", get_station_track_list(t21, current_vertex))
 
         # Determine for each segment track, when you can enter that track
         # i.e. these dicts contain a list of interval lists for each segment track
@@ -205,18 +207,10 @@ if __name__ == '__main__':
                     entering_main_segment_candidates_after_runthrough[next_track] = []
 
                 # print(station_parked_occupations.keys())
-                if current_vertex == "Brl":
-                    print("Stop at", station_track, station_parked_occupations[(current_vertex, station_track)])
-                    print("Runthrough at", station_track, station_runthrough_occupations[(current_vertex, station_track)])
                 entering_main_segment_candidates_after_stop[next_track] += [intutils.intersect_intervals(station_parked_occupations[(current_vertex, station_track)], free_space_dict[get_transition_key(current_vertex, next_vertex, station_track, next_track, False)])]
 
                 entering_main_segment_candidates_after_runthrough[next_track] += [intutils.intersect_intervals(station_runthrough_occupations[(current_vertex, station_track)], free_space_dict[
                     get_transition_key(current_vertex, next_vertex, station_track, next_track, False)])]
-
-                if current_vertex == "Brl":
-                    print("Departure from stop", station_track, intutils.intersect_intervals(station_parked_occupations[(current_vertex, station_track)], free_space_dict[get_transition_key(current_vertex, next_vertex, station_track, next_track, False)]))
-                    print("Departure from runthrough", station_track, intutils.intersect_intervals(station_runthrough_occupations[(current_vertex, station_track)], free_space_dict[
-                    get_transition_key(current_vertex, next_vertex, station_track, next_track, False)]))
 
                 # print("Towards track", next_track, entering_main_segment_candidates_after_runthrough[next_track])
                 # print("test!", entering_main_segment_candidates_after_stop[next_track])
@@ -227,11 +221,6 @@ if __name__ == '__main__':
 
             entering_main_segment_candidates_after_runthrough[next_track] = intutils.merge_intervals(entering_main_segment_candidates_after_runthrough[next_track])
 
-            if current_vertex == "Brl":
-                print("On Segment after stop", entering_main_segment_candidates_after_stop[next_track])
-                print("On Segment after runthrough", entering_main_segment_candidates_after_runthrough[next_track])
-            # print("test!", len(entering_main_segment_candidates_after_runthrough[next_track]))
-            # print("test!", entering_main_segment_candidates_after_stop[next_track])
         # Now extend this for the segments
         # Start from the segment free spaces, and map each segment free space to a (possibly empty) list of time intervals to enter the segment
         # Perhaps (is this needed?) make sure that the corr starting times are strictly increasing, so remove any bit that is below two other values.
@@ -252,17 +241,6 @@ if __name__ == '__main__':
 
             leaving_segment_towards_stop = intutils.merge_intervals([leaving_segment_list_rs, leaving_segment_list_ss])
             leaving_segment_towards_runthrough = intutils.merge_intervals([leaving_segment_list_rr, leaving_segment_list_sr])
-
-            if current_vertex == "Brl":
-                print("rr eval", leaving_segment_list_rr)
-                print("sr eval", leaving_segment_list_sr)
-                print("towards runthr merged", leaving_segment_towards_runthrough)
-
-                print("rs eval", leaving_segment_list_rs)
-                print("ss eval", leaving_segment_list_rs)
-                print("tow stop merged", leaving_segment_towards_stop)
-
-            print(allowed_movements_at_arrival[(current_vertex, next_vertex, next_vertex, "nananan", next_track)])
 
             for entering_track in allowed_movements_at_arrival[(current_vertex, next_vertex, next_vertex, "nananan", next_track)]:
                 if entering_track not in entering_station_candidates_towards_stop.keys():
@@ -286,10 +264,6 @@ if __name__ == '__main__':
         for station_track in entering_station_candidates_towards_stop.keys():
             station_parked_occupations_temp[(next_vertex, station_track)] = intutils.extend_parked_times(entering_station_candidates_towards_stop[station_track], free_space_dict[next_vertex + "/" + station_track])
 
-            print("Free spaces for parking at", next_vertex, station_track, free_space_dict[next_vertex + "/" + station_track])
-            print("Original", entering_station_candidates_towards_stop[station_track])
-            print("Extended", station_parked_occupations_temp[(next_vertex, station_track)])
-
             interm = [lint for lint in station_parked_occupations_temp[(next_vertex, station_track)] if lint.start != lint.end]
 
             station_parked_occupations[(next_vertex, station_track)] = intutils.merge_intervals([interm])
@@ -310,7 +284,11 @@ if __name__ == '__main__':
                   "sr", running_time[(prev_vertex, current_vertex, "s", "r")],
                   "ss", running_time[(prev_vertex, current_vertex, "s", "s")])
         prev_vertex = current_vertex
-        print(current_vertex, station_track, station_parked_occupations[(current_vertex, station_track)])
-        print(current_vertex, station_track, station_runthrough_occupations[(current_vertex, station_track)])
 
+        # print(current_vertex, station_track, [v for v in station_parked_occupations[(current_vertex, station_track)] if v.orig_start <= datetime.strptime("2021-01-20 10:40:18", "%Y-%m-%d %H:%M:%S") and datetime.strptime("2021-01-20 10:40:14", "%Y-%m-%d %H:%M:%S") <= v.orig_end])
+        # print(current_vertex, station_track,  [v for v in station_runthrough_occupations[(current_vertex, station_track)] if v.orig_start <= datetime.strptime("2021-01-20 10:40:18", "%Y-%m-%d %H:%M:%S") and datetime.strptime("2021-01-20 10:40:14", "%Y-%m-%d %H:%M:%S") <= v.orig_end])
+        print(current_vertex, station_track, len(station_parked_occupations[(current_vertex, station_track)]) + len(station_runthrough_occupations[(current_vertex, station_track)]))
+        print(current_vertex, station_track, station_runthrough_occupations[(current_vertex, station_track)] )
     print(end - start)
+    with open('../out/running_times.txt', 'a+') as the_file:
+        the_file.write(f"{end-start}\n")

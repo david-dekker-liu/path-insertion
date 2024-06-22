@@ -13,7 +13,7 @@ def get_free_spaces(full_t21, t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_
     single_track_segments = full_t21[full_t21["segment_type"] == "single_block_segment"]["segment_key"].drop_duplicates().tolist()
     station_segments = full_t21[full_t21["segment_type"] == "station"]["segment_key"].drop_duplicates().tolist()
 
-    print("tester", full_t21[(full_t21["orig"] == "Fdf") & full_t21["track_id"] == "3"])
+    # print("tester", full_t21[(full_t21["orig"] == "Fdf") & full_t21["track_id"] == "3"])
 
     for seg_k in single_track_segments:
         curr_orig, curr_dest = seg_k.split("_")[0].split("-")
@@ -65,7 +65,7 @@ def get_free_spaces(full_t21, t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_
 
             free_space_dict[seg_k] = [IntervalPair(x, y, x, y) for x, y in list(zip(free_space_start, free_space_end)) if x < y]
 
-        print(seg_k, free_space_dict[seg_k])
+        # print(seg_k, free_space_dict[seg_k])
 
     # The largely analogous case of stations
     for seg_k in station_segments:
@@ -111,7 +111,7 @@ def get_free_spaces(full_t21, t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_
                 free_space_end = free_space_end + [pd.to_datetime(TIME_TO_DATETIME)]
 
             free_space_dict[seg_k] = [Interval(x, y) for x, y in list(zip(free_space_start, free_space_end))]
-        print(seg_k, free_space_dict[seg_k])
+        # print(seg_k, free_space_dict[seg_k])
 
     # The double track case is a bit more tedious,
     # as the free spaces no longer are rectangles but trapezoids.
@@ -184,7 +184,7 @@ def get_free_spaces(full_t21, t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_
                 free_space_end_dest = free_space_end_dest + [pd.to_datetime(TIME_TO_DATETIME)]
 
             free_space_dict[seg_k] = [IntervalPair(w, x, y, z) for w, x, y, z in list(zip(free_space_start_orig, free_space_end_orig, free_space_start_dest, free_space_end_dest))]
-        print(seg_k, free_space_dict[seg_k])
+        # print(seg_k, free_space_dict[seg_k])
 
     full_t21["train_key"] = full_t21.apply(lambda x: x["date"] + "_" + str(x["train_ix"]), axis=1)
     t21_sorted = full_t21.sort_values(["train_key", "time_end"])
@@ -216,7 +216,7 @@ def get_free_spaces(full_t21, t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_
     for seg_k in transition_segments:
         for is_arriving in [True, False]:
             seg_k_expanded = seg_k + "&" + str(is_arriving)
-            print(seg_k_expanded)
+            # print(seg_k_expanded)
             stations, tracks = seg_k.split("+")
             main_station, towards_station = stations.split("=")
             main_track, towards_track = tracks.split("=")

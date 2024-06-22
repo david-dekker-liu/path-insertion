@@ -51,17 +51,17 @@ def get_min_block_diff_at_single_track_before(train_id, orig, dest):
 
 # Headway between station track occupation
 def get_min_block_diff_at_station_after(train_id, station, track_id):
-    return 120
+    return 180
 
 
 # Headway between station track occupation
 def get_min_block_diff_at_station_before(train_id, station, track_id):
-    return 120
+    return 180
 
 
 def get_min_block_diff_at_transition_before(train_id, main_loc, towards_loc, main_track_id, towards_track_id, arriving_boolean):
     if arriving_boolean:
-        return 120
+        return 180
     else:
         return 60
 
@@ -70,4 +70,4 @@ def get_min_block_diff_at_transition_after(train_id, main_loc, towards_loc, main
     if arriving_boolean:
         return 60
     else:
-        return 120
+        return 180
