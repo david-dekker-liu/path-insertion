@@ -1,0 +1,187 @@
+Gsv;Göteborg Sävenäs;71 72 73
+Or1;Olskroken;72
+Or;Olskroken1;89
+Gbm;Göteborg Marieholm;1 2 3
+Agb;Agnesberg;1 2 3
+Sue;Surte;1 2
+Bhs;Bohus;1 2 3
+Nöe;Nödinge;1 2
+Nol;Nol;1 2
+Än;Älvängen;1 2 3
+Alh;Alvhem;1 2 3
+Les;Lödöse Södra;1 2
+Tbn;Torbacken;1 2
+Vpm;Varpemossen;1 2 3
+Veas;Velanda södra;1 2
+Thn;Trollhättan;1 2 3 4
+Öx;Öxnered;1 2
+Bjh;Bjurhem;1 2
+Fdf;Frändefors;2 3
+Brl;Brålanda;2 3
+Skbl;Skälebol;1
+Rås;Råskogen;1 2
+Bäf;Bäckefors;1 2
+Ed;Ed;1 2
+Ko;Kornsjö gränsen;1
+
+Gsv;0
+U N
+Or1;1
+E
+Or;2
+A
+Gbm;5
+U N
+Agb;9
+U N
+Sue;14
+U N
+Bhs;19
+U N
+Nöe;22
+U N
+Nol;25
+U N
+Än;31
+U N
+Alh;38
+U N
+Les;39
+U N
+Tbn;47
+U N
+Vpm;55
+U N
+Veas;65
+U N
+Thn;73
+U N
+Öx;82
+E
+Bjh;90
+E
+Fdf;97
+E
+Brl;106
+E
+Skbl;112
+&
+Skbl;112
+E
+Rås;116
+E
+Bäf;142
+E
+Ed;160
+E
+Ko;180
+
+Drt;Rås,Drt,Bäf
+Mon;Ed,Mon,Ko
+
+Rås,Bäf;0-1-2
+Bäf,Ed;0-1-2
+Ed,Ko;0-1-2
+
+Ed;non-parallel;Ko;Bäf
+Bäf;non-parallel;Ed;Rås
+Rås;parallel;Skbl;Bäf
+Brl;non-parallel;Skbl;Fdf
+Fdf;non-parallel;Bjh;Brl
+Bjh;non-parallel;Öx;Fdf
+Öx;block-diff;Bjh,*,Öx,1 2;Öx,1 2,Bjh,*
+Öx;non-parallel-diff;Bjh,*,Öx,1 2;Thn,*,Öx,1 2
+Öx;non-parallel-diff;Thn,*,Öx,1 2;Bjh,*,Öx,1 2
+Öx;block-diff;Ryr,E,Öx,2 3 4;Öx,1 2,Thn,N
+Öx;block-diff;Thn,U,Öx,1 2;Öx,1 2 3 4,Ryr,E
+Öx;block-diff;Thn,U,Öx,2 3 4;Öx,1,Thn,N
+Öx;öx-ost-west;Öx,1 2 3 4,Ryr,E;Thn,U,Öx,1 2
+Öx;öx-west-süd-large;Ryr,E,Öx,60;Thn,U,Öx,1 2
+Öx;öx-west-süd-small;Öx,60,Thn,N;Thn,U,Öx,1 2
+Öx;gleis-wechsel-far-öx;Öx,1,Thn,N;Thn,U,Öx,2 3 4
+Öx;gleis-wechsel-far-öx;Öx,1,Thn,N;Thn,U,Öx,1
+Öx;gleis-wechsel;Öx,2,Thn,N;Thn,U,Öx,2
+Thn;gleis-wechsel;Thn,2 3 4,Öx,U;Öx,N,Thn,1 2 3 4
+Thn;gleis-wechsel;Thn,1,Öx,U;Öx,N,Thn,1
+Thn;gleis-wechsel;Thn,2 3 4,Veas,N;Veas,U,Thn,2 3 4
+Thn;gleis-wechsel-far-Thn;Thn,1,Veas,N;Veas,U,Thn,1 2 3 4
+Thn;block-diff;Veas,U,Thn,2 3 4;Thn,1 2 3 4,Veas,N
+Thn;block-diff;Öx,N,Thn,1 2 3 4;Thn,2 3 4,Öx,U
+Veas;gleis-wechsel;Veas,1,Thn,U;Thn,N,Veas,1
+Veas;gleis-wechsel;Veas,1,Vpm,N;Vpm,U,Veas,1	
+Vpm;block-diff;Veas,N,Vpm,2 3;Vpm,2 3,Veas,U
+Vpm;block-diff;Tbn,U,Vpm,2 3;Vpm,2 3,Tbn,N
+Vpm;gleis-wechsel;Vpm,2 3,Veas,U;Veas,N,Vpm,2 3
+Vpm;gleis-wechsel;Vpm,2 3,Tbn,N;Tbn,U,Vpm,2 3
+Tbn;gleis-wechsel;Tbn,2,Vpm,U;Vpm,N,Tbn,2
+Tbn;gleis-wechsel;Tbn,2,Les,N;Les,U,Tbn,2
+Les;gleis-wechsel;Les,2,Tbn,U;Tbn,N,Les,2
+Alh;block-diff;Än,U,Alh,2 3;Alh,2 3,Än,N
+Alh;block-diff;Les,N,Alh,2 3;Alh,2 3,Les,U
+Alh;gleis-wechsel;Alh,2 3,Än,N;Än,U,Alh,2 3
+Alh;gleis-wechsel;Alh,2 3,Les,U;Les,N,Alh,2 3
+Än;gleis-wechsel;Än,1,Nol,N;Nol,U,Än,2
+Än;block-diff;Nol,U,Än,2;Än,1,Nol,N
+Bhs;block-diff;Nöe,N,Bhs,1 2;Bhs,1 2,Nöe,U
+Bhs;block-diff;Sue,U,Bhs,1 2;Bhs,1 2,Sue,N
+Bhs;gleis-wechsel;Bhs,1 2,Nöe,U;Nöe,N,Bhs,1 2
+Bhs;gleis-wechsel;Bhs,1 2,Sue,N;Sue,U,Bhs,1 2
+Agb;gleis-wechsel;Agb,2,Sue,U;Sue,N,Agb,2
+Agb;gleis-wechsel;Agb,2,Gbm,N;Gbm,U,Agb,2
+Gbm;gleis-wechsel;Gbm,2,Sue,U;Sue,N,Gbm,2
+Gbm;gleis-wechsel;Gbm,2,Gas,N;Gas,U,Gbm,2
+Gbm;gleis-wechsel;Gbm,2,Gas,N;Or,A,Gbm,2
+Gbm;block-diff;Or,A,Gbm,2 3;Gbm,1 2,Or,A
+Gbm;block-diff;Gas,U,Gbm,2 3;Gbm,1 2,Or,A
+
+Gsv;72
+U
+Or1;72
+&
+Or1;72
+E
+Or;89
+A
+Gbm;2 3
+U
+Agb;2 3
+U
+Sue;2
+U
+Bhs;1 2
+U
+Nöe;2
+U
+Nol;2
+U
+Än;2
+U
+Alh;2 3
+U
+Les;2
+U
+Tbn;2
+U
+Vpm;1
+U
+Veas;2
+U
+Thn;1
+U
+Öx;1 2
+E
+Bjh;1 2
+E
+Fdf;2 3
+E
+Brl;2 3
+E
+Skbl;1
+E
+Rås;1 2
+E
+Bäf;1 2
+E
+Ed;1 2
+E
+Ko;1

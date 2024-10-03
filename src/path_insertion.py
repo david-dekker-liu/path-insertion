@@ -4,10 +4,13 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 from datetime import timedelta
+
+import interval_utils
 import src.free_space_detection as free_space_detection
 import src.timetable_creation as timetable_creation
 import src.interval_utils as intutils
 from src.intervals import LinkedInterval, Interval
+from src.infrastructure import Infrastructure, Station, Segment
 
 # TODO Test first if it is a predefined exception,
 # TODO i.e., single-track line with smaller blocks.
@@ -28,6 +31,7 @@ def get_segment_type_from_values(dest, track_id):
     return "multiple_block_segments"
 
 
+# TODO deprecated replaced by infrastructure file
 # Returns a dictionary from (station, segment) or (segment, station) and track_id
 # to a list with all allowed track_id's to arrive on
 # TODO merge with a list of deviations
@@ -58,7 +62,8 @@ def get_allowed_movements_at_arrival():
     possible_movements_dict[("Öx", "nananan", "Öx", "Bjh", "60")] = []
     possible_movements_dict[("Öx", "nananan", "Öx", "Bjh", "3")] = []
     possible_movements_dict[("Gbm", "nananan", "Gbm", "Agb", "41")] = []
-    # possible_movements_dict[("Veas", "Thn", "Thn", "nananan", "U")] = ["1"]
+    possible_movements_dict[("Veas", "Thn", "Thn", "nananan", "U")] = ["1"]
+
     return possible_movements_dict
 
 
@@ -109,37 +114,58 @@ def get_station_track_list(df, loc):
 
 
 if __name__ == '__main__':
+    infra = Infrastructure("../config/infrastructure-details-SE.txt", "../config/conflict_margins.txt")
     fullstart = time.time()
+
     # Time frame to be considered
     TIME_FROM = "2021-01-20 07:00"
     TIME_TO = "2021-01-20 14:00"
     TIME_FROM_DATETIME = datetime.strptime(TIME_FROM, "%Y-%m-%d %H:%M")
     TIME_TO_DATETIME = datetime.strptime(TIME_TO, "%Y-%m-%d %H:%M")
 
-    # Manual list of vertices to be explored
-    # Derive the filtered t21 timetable, export it and detect Parallelfahrts
-    train_route = ["Gsv", "Or1", "Or", "Gbm", "Agb", "Sue", "Bhs", "Nöe", "Nol", "Än", "Alh", "Les", "Tbn", "Vpm", "Veas", "Thn", "Öx", "Bjh", "Fdf", "Brl", "Skbl", "Rås", "Drt", "Bäf", "Ed", "Mon", "Ko"]
+    # Hard-coded train route at the moment
+    # Segments are derived from that
+    # train_route = ["Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
+    train_route = ["Gbm", "Agb", "Sue", "Bhs", "Nöe", "Nol", "Än", "Alh", "Les", "Tbn", "Vpm", "Veas", "Thn", "Öx", "Bjh", "Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
+    # train_route = ["Gsv", "Or1", "Or", "Gbm", "Agb", "Sue", "Bhs", "Nöe", "Nol", "Än", "Alh", "Les", "Tbn", "Vpm", "Veas", "Thn", "Öx", "Bjh", "Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
+    segments = [(train_route[i], train_route[i+1]) for i in range(len(train_route) - 1)]
 
-    full_t21, t21 = timetable_creation.get_timetable(TIME_FROM, TIME_TO, train_route)
+    # Get all station tracks for which we need precomputations
+    # These are derived from the infra neighborhood dicts,
+    # i.e., for each segment, get the tracks that it can use and the tracks where it can depart from
+    # For the last station, there might be no departures, so all possible tracks are used there
+    relevant_station_tracks_keys = [key for key in infra.N_stations if (key[0], key[1]) in segments]
+    relevant_station_tracks = {}
+    for station in train_route:
+        relevant_station_tracks[station] = [v[2] for v in relevant_station_tracks_keys if v[0] == station]
+    relevant_station_tracks[train_route[-1]] = infra.stations[train_route[-1]].tracks
+
+    # Similar for obtaining all possible segment tracks
+    relevant_segment_tracks_keys = [key for key in infra.N_segments if (key[0], key[1]) in segments]
+    relevant_segment_tracks = {}
+    for segment in segments:
+        relevant_segment_tracks[segment] = [v[2] for v in relevant_segment_tracks_keys if (v[0] == segment[0] and v[1] == segment[1]) or (v[1] == segment[0] and v[0] == segment[1])]
+
+    t21 = timetable_creation.get_timetable(TIME_FROM, TIME_TO, train_route)
+    t21 = timetable_creation.remove_linjeplatser(t21, ["Drt", "Mon"])
     t21.to_csv("../data/filtered_t21.csv", sep=";")
-
-    # timetable_creation.verify_timetable_consistency(t21)
+    # t21 = pd.read_csv("../data/filtered_t21.csv", sep=";")
+    # timetable_creation.detect_track_allocation_problems(t21, train_route, "../out/log.txt")
 
     train_to_insert = 45693
-    free_space_dict = free_space_detection.get_free_spaces(full_t21, t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME)
-
-    technical_running_times = pd.read_csv("../data/t21_technical_running_times.csv")
     speed_profile = "GB201010"
-    running_time = {}
-    for index, row in technical_running_times[technical_running_times["train_type"] == speed_profile].iterrows():
-        running_time[(row["stn_id_from"], row["stn_id_to"], "r", "r")] = row["rt_forw_pp"]
-        running_time[(row["stn_id_from"], row["stn_id_to"], "r", "s")] = row["rt_forw_ps"]
-        running_time[(row["stn_id_from"], row["stn_id_to"], "s", "r")] = row["rt_forw_sp"]
-        running_time[(row["stn_id_from"], row["stn_id_to"], "s", "s")] = row["rt_forw_ss"]
-        running_time[(row["stn_id_to"], row["stn_id_from"], "r", "r")] = row["rt_forw_pp"]
-        running_time[(row["stn_id_to"], row["stn_id_from"], "r", "s")] = row["rt_forw_ps"]
-        running_time[(row["stn_id_to"], row["stn_id_from"], "s", "r")] = row["rt_forw_sp"]
-        running_time[(row["stn_id_to"], row["stn_id_from"], "s", "s")] = row["rt_forw_ss"]
+    running_time = timetable_creation.get_running_times("../data/t21_technical_running_times.csv", infra.linjeplatser, speed_profile)
+
+    print(infra.stations)
+    print("Get station free spaces")
+    free_space_dict_stations = free_space_detection.get_free_spaces_stations(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME, infra.stations)
+    print(free_space_dict_stations)
+    print("Get transition free spaces")
+    free_space_dict_transitions = free_space_detection.get_free_spaces_transitions(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME, infra.transitions)
+    print(free_space_dict_transitions)
+    print("Get segment free spaces")
+    free_space_dict_segments = free_space_detection.get_free_spaces_segments(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME, segments, infra)
+    print(free_space_dict_segments)
 
     # Get minimum running time for the full path
     min_time = 0
@@ -149,29 +175,24 @@ if __name__ == '__main__':
         min_time += running_time[(train_route[i+1], train_route[i+2], "r", "r")]
     print(f"Minimum travel time for profile {speed_profile} on Gsv-Ko: {min_time}")
 
-    # For each single-track segment, obtain the free-space list
-    # The free_space_dict maps from segment keys to a list of free slots
-    # In the single track case, these are rectangles indicated by their start- and endtime
-    usable_tracks = {("Gsv", "Or1"): ["U"], ("Or1", "Or"): ["E"], ("Or", "Gbm"): ["A"], ("Gbm", "Agb"): ["U"], ("Agb", "Sue"): ["U"], ("Sue", "Bhs"): ["U"], ("Bhs", "Nöe"): ["U"], ("Nöe", "Nol"): ["U"], ("Nol", "Än"): ["U"], ("Än", "Alh"): ["U"], ("Alh", "Les"): ["U"], ("Les", "Tbn"): ["U"], ("Tbn", "Vpm"): ["U"], ("Vpm", "Veas"): ["U"], ("Veas", "Thn"): ["U"], ("Thn", "Öx"): ["U"], ("Öx", "Bjh"): ["E"], ("Bjh", "Fdf"): ["E"], ("Fdf", "Brl"): ["E"], ("Brl", "Skbl"): ["E"], ("Skbl", "Rås"): ["E"], ("Rås", "Drt"): ["E"], ("Drt", "Bäf"): ["E"], ("Bäf", "Ed"): ["E"], ("Ed", "Mon"): ["E"], ("Mon", "Ko"): ["E"]}
-
-    # print(free_space_dict.keys())
     first_loc = train_route[0]
 
     station_parked_occupations = {}
     station_runthrough_occupations = {}
+    backtrack_after_stop = {}
+    backtrack_after_runthrough = {}
 
     candidate_track_occupations = {}
     segment_track_occupations_at_start = {}
     segment_track_occupations_at_end = {}
-    allowed_movements_at_arrival = get_allowed_movements_at_arrival()
 
     start = time.time()
     print("preprocessing: ", start-fullstart)
 
     # Initialize the dynamic-ish program at the start location
     # Initial run-through is impossible, all free spaces at all tracks give possible departures
-    for station_track in get_station_track_list(t21, first_loc):
-        station_parked_occupations[(first_loc, station_track)] = [LinkedInterval(x.start, x.end, x.start, x.end) for x in free_space_dict[get_key(first_loc, None, station_track)]]
+    for station_track in relevant_station_tracks[first_loc]:
+        station_parked_occupations[(first_loc, station_track)] = [LinkedInterval(x.start, x.end, x.start, x.end) for x in free_space_dict_stations[(first_loc, station_track)]]
         station_runthrough_occupations[(first_loc, station_track)] = []
 
     # Now traverse all given segments
@@ -189,34 +210,37 @@ if __name__ == '__main__':
         entering_main_segment_candidates_after_runthrough = {}
         entering_station_candidates_towards_stop = {}
         entering_station_candidates_towards_runthrough = {}
-
+        print(infra.N_segments)
         # First, intersect track possibilities with transition free spaces
         # TODO only take station tracks that were reachable i.e. have existing index!
         # for station_track in get_station_track_list(t21, current_vertex):
-        for (vtx, station_track) in station_parked_occupations.keys():
-            if vtx != current_vertex:
-                continue
-
-            # Filter the theoretically possible tracks by the allowed tracks (i.e., only use U northbound)
-            allowed_next_tracks = [v for v in allowed_movements_at_arrival[(current_vertex, "nananan", current_vertex, next_vertex, station_track)] if v in usable_tracks[(current_vertex, next_vertex)]]
-            # print("Departure from", current_vertex, station_track, "can be towards", allowed_next_tracks)
+        for station_track in relevant_station_tracks[current_vertex]:
+            # Obtain possible tracks on the following segment
+            allowed_next_tracks = infra.N_stations[(current_vertex, next_vertex, station_track)]
 
             for next_track in allowed_next_tracks:
                 if next_track not in entering_main_segment_candidates_after_stop.keys():
                     entering_main_segment_candidates_after_stop[next_track] = []
                     entering_main_segment_candidates_after_runthrough[next_track] = []
 
-                # print(station_parked_occupations.keys())
-                entering_main_segment_candidates_after_stop[next_track] += [intutils.intersect_intervals(station_parked_occupations[(current_vertex, station_track)], free_space_dict[get_transition_key(current_vertex, next_vertex, station_track, next_track, False)])]
+                if (current_vertex, station_track, next_vertex, next_track) in infra.transitions:
+                    # print((current_vertex, station_track, next_vertex, next_track), "is an important transition")
+                    new_intervals_after_stop = intutils.intersect_intervals(station_parked_occupations[(current_vertex, station_track)], free_space_dict_transitions[(current_vertex, station_track, next_vertex, next_track)])
+                    new_intervals_after_runthrough = intutils.intersect_intervals(station_runthrough_occupations[(current_vertex, station_track)], free_space_dict_transitions[(current_vertex, station_track, next_vertex, next_track)])
+                    entering_main_segment_candidates_after_stop[next_track] += [new_intervals_after_stop]
+                    entering_main_segment_candidates_after_runthrough[next_track] += [new_intervals_after_runthrough]
+                    backtrack_after_stop[(current_vertex, station_track)] = new_intervals_after_stop
+                    backtrack_after_runthrough[(current_vertex, station_track)] = new_intervals_after_runthrough
 
-                entering_main_segment_candidates_after_runthrough[next_track] += [intutils.intersect_intervals(station_runthrough_occupations[(current_vertex, station_track)], free_space_dict[
-                    get_transition_key(current_vertex, next_vertex, station_track, next_track, False)])]
-
-                # print("Towards track", next_track, entering_main_segment_candidates_after_runthrough[next_track])
-                # print("test!", entering_main_segment_candidates_after_stop[next_track])
+                else:
+                    # print((current_vertex, station_track, next_vertex, next_track), "is not an important transition")
+                    entering_main_segment_candidates_after_stop[next_track] += [station_parked_occupations[(current_vertex, station_track)]]
+                    entering_main_segment_candidates_after_runthrough[next_track] += [station_runthrough_occupations[(current_vertex, station_track)]]
+                    backtrack_after_stop[(current_vertex, station_track)] = station_parked_occupations[(current_vertex, station_track)]
+                    backtrack_after_runthrough[(current_vertex, station_track)] = station_runthrough_occupations[(current_vertex, station_track)]
 
         # Then, modify the dictionary entries by merging the list of interval lists to one interval list
-        for next_track in entering_main_segment_candidates_after_stop.keys():
+        for next_track in relevant_segment_tracks[(current_vertex, next_vertex)]:
             entering_main_segment_candidates_after_stop[next_track] = intutils.merge_intervals(entering_main_segment_candidates_after_stop[next_track])
 
             entering_main_segment_candidates_after_runthrough[next_track] = intutils.merge_intervals(entering_main_segment_candidates_after_runthrough[next_track])
@@ -231,27 +255,38 @@ if __name__ == '__main__':
         # If no interval is present after the segment, add a bonus "slow moving" segment with constant departure time.
 
         # print("shit", entering_main_segment_candidates_after_stop.keys())
-        for next_track in entering_main_segment_candidates_after_stop.keys():
+        for next_track in relevant_segment_tracks[(current_vertex, next_vertex)]:
             # Determine interval lists for the next station by extending with the appropriate running time
             # print(current_vertex, next_vertex, next_track, get_key(current_vertex, next_vertex, next_track), free_space_dict[get_key(current_vertex, next_vertex, next_track)])
-            leaving_segment_list_ss = intutils.evaluate_running_times(entering_main_segment_candidates_after_stop[next_track], free_space_dict[get_key(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "s", "s")])
-            leaving_segment_list_sr = intutils.evaluate_running_times(entering_main_segment_candidates_after_stop[next_track], free_space_dict[get_key(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "s", "r")])
-            leaving_segment_list_rs = intutils.evaluate_running_times(entering_main_segment_candidates_after_runthrough[next_track], free_space_dict[get_key(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "r", "s")])
-            leaving_segment_list_rr = intutils.evaluate_running_times(entering_main_segment_candidates_after_runthrough[next_track], free_space_dict[get_key(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "r", "r")])
+            leaving_segment_list_ss = intutils.evaluate_running_times(entering_main_segment_candidates_after_stop[next_track], free_space_dict_segments[(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "s", "s")])
+            leaving_segment_list_sr = intutils.evaluate_running_times(entering_main_segment_candidates_after_stop[next_track], free_space_dict_segments[(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "s", "r")])
+            leaving_segment_list_rs = intutils.evaluate_running_times(entering_main_segment_candidates_after_runthrough[next_track], free_space_dict_segments[(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "r", "s")])
+            leaving_segment_list_rr = intutils.evaluate_running_times(entering_main_segment_candidates_after_runthrough[next_track], free_space_dict_segments[(current_vertex, next_vertex, next_track)], running_time[(current_vertex, next_vertex, "r", "r")])
+
+            # print(leaving_segment_list_rs)
+            # print(leaving_segment_list_ss)
 
             leaving_segment_towards_stop = intutils.merge_intervals([leaving_segment_list_rs, leaving_segment_list_ss])
             leaving_segment_towards_runthrough = intutils.merge_intervals([leaving_segment_list_rr, leaving_segment_list_sr])
 
-            for entering_track in allowed_movements_at_arrival[(current_vertex, next_vertex, next_vertex, "nananan", next_track)]:
+            for entering_track in infra.N_segments[(current_vertex, next_vertex, next_track)]:
                 if entering_track not in entering_station_candidates_towards_stop.keys():
                     entering_station_candidates_towards_stop[entering_track] = []
                     entering_station_candidates_towards_runthrough[entering_track] = []
 
-                entering_station_candidates_towards_stop[entering_track] += [intutils.intersect_intervals(leaving_segment_towards_stop, free_space_dict[get_transition_key(next_vertex, current_vertex, entering_track, next_track, True)])]
+                if (current_vertex, next_track, next_vertex, entering_track) in infra.transitions:
+                    # print((current_vertex, next_track, next_vertex, entering_track), "is important")
+                    # print(entering_station_candidates_towards_stop[entering_track])
+                    # print(free_space_dict_transitions[(current_vertex, next_track, next_vertex, entering_track)])
+                    entering_station_candidates_towards_stop[entering_track] += [intutils.intersect_intervals(leaving_segment_towards_stop, free_space_dict_transitions[(current_vertex, next_track, next_vertex, entering_track)])]
 
-                entering_station_candidates_towards_runthrough[entering_track] += [intutils.intersect_intervals(leaving_segment_towards_runthrough, free_space_dict[get_transition_key(next_vertex, current_vertex, entering_track, next_track, True)])]
+                    entering_station_candidates_towards_runthrough[entering_track] += [intutils.intersect_intervals(leaving_segment_towards_runthrough, free_space_dict_transitions[(current_vertex, next_track, next_vertex, entering_track)])]
+                else:
+                    entering_station_candidates_towards_stop[entering_track] += [leaving_segment_towards_stop]
 
-        for entering_track in entering_station_candidates_towards_stop.keys():
+                    entering_station_candidates_towards_runthrough[entering_track] += [leaving_segment_towards_runthrough]
+
+        for entering_track in relevant_station_tracks[next_vertex]:
             entering_station_candidates_towards_stop[entering_track] = intutils.merge_intervals(
                 entering_station_candidates_towards_stop[entering_track])
 
@@ -261,8 +296,8 @@ if __name__ == '__main__':
         station_parked_occupations_temp = {}
         station_runthrough_occupations_temp = {}
 
-        for station_track in entering_station_candidates_towards_stop.keys():
-            station_parked_occupations_temp[(next_vertex, station_track)] = intutils.extend_parked_times(entering_station_candidates_towards_stop[station_track], free_space_dict[next_vertex + "/" + station_track])
+        for station_track in relevant_station_tracks[next_vertex]:
+            station_parked_occupations_temp[(next_vertex, station_track)] = intutils.extend_parked_times(entering_station_candidates_towards_stop[station_track], free_space_dict_stations[(next_vertex, station_track)])
 
             interm = [lint for lint in station_parked_occupations_temp[(next_vertex, station_track)] if lint.start != lint.end]
 
@@ -275,20 +310,286 @@ if __name__ == '__main__':
             station_runthrough_occupations[(next_vertex, station_track)] = intutils.merge_intervals([interm])
 
     end = time.time()
+    last_vertex = train_route[-1]
+    options = []
 
-    prev_vertex = 0
-    for (current_vertex, station_track) in station_parked_occupations.keys():
-        if prev_vertex != 0 and prev_vertex != current_vertex:
-            print("rr", running_time[(prev_vertex, current_vertex, "r", "r")],
-                  "rs", running_time[(prev_vertex, current_vertex, "r", "s")],
-                  "sr", running_time[(prev_vertex, current_vertex, "s", "r")],
-                  "ss", running_time[(prev_vertex, current_vertex, "s", "s")])
-        prev_vertex = current_vertex
+    #########################
+    ### PATH BACKTRACKING ###
+    #########################
 
-        # print(current_vertex, station_track, [v for v in station_parked_occupations[(current_vertex, station_track)] if v.orig_start <= datetime.strptime("2021-01-20 10:40:18", "%Y-%m-%d %H:%M:%S") and datetime.strptime("2021-01-20 10:40:14", "%Y-%m-%d %H:%M:%S") <= v.orig_end])
-        # print(current_vertex, station_track,  [v for v in station_runthrough_occupations[(current_vertex, station_track)] if v.orig_start <= datetime.strptime("2021-01-20 10:40:18", "%Y-%m-%d %H:%M:%S") and datetime.strptime("2021-01-20 10:40:14", "%Y-%m-%d %H:%M:%S") <= v.orig_end])
-        print(current_vertex, station_track, len(station_parked_occupations[(current_vertex, station_track)]) + len(station_runthrough_occupations[(current_vertex, station_track)]))
-        print(current_vertex, station_track, station_runthrough_occupations[(current_vertex, station_track)] )
-    print(end - start)
-    with open('../out/running_times.txt', 'a+') as the_file:
-        the_file.write(f"{end-start}\n")
+    # Generate a discrete number of paths, as there could be continuous ranges
+    # We merge all options for all tracks
+    for track in infra.stations[last_vertex].tracks:
+        if (last_vertex, track) not in station_parked_occupations:
+            continue
+
+        for interval in station_parked_occupations[(last_vertex, track)]:
+            # Each interval with one departure time gives one path (i.e., .orig_start to .start)
+            if interval.orig_start == interval.orig_end:
+                options += [(track, interval.start, interval.orig_start, "s")]
+            # Otherwise, we will generate paths with a separation of 180 seconds in between
+            else:
+                timestamp_orig = interval.orig_start
+                timestamp_now = interval.start
+                while timestamp_orig <= interval.orig_end:
+                    options += [(track, timestamp_now, timestamp_orig, "s")]
+                    timestamp_orig = timestamp_orig + timedelta(0, 180)
+                    timestamp_now = timestamp_now + timedelta(0, 180)
+
+    print(options)
+    filtered_options = []
+
+    # Remove duplicate options and options that are dominated by others
+    # (may occur due to different available tracks)
+    for option in options:
+        dominant = True
+        for other_track, other_here, other_start, startstop in options:
+            if other_here <= option[1] and other_start >= option[2] and (other_here < option[1] or other_start > option[2]):
+                dominant = False
+
+        if dominant and all([y != option[1] or z != option[2] for x, y, z, t in filtered_options]):
+            filtered_options += [option]
+
+    # Sort by departure at the start
+    filtered_options.sort(key=lambda x: x[2])
+    print(filtered_options)
+
+    # Removing paths that start or end very close to another path
+    # When start times are close (< 180 seconds), we remove the later departing path;
+    # when the end times are close (< 180 seconds), we remove the earlier departing path.
+    # NOTE: perhaps not wise when it is a suitable candidate path
+    filtered_filtered_options = []
+    last_start_time = 0
+    last_end_time = 0
+    count = 1
+    print("filtered options", filtered_options)
+    for w,x,y,z in filtered_options:
+        if last_end_time == 0:
+            filtered_filtered_options += [(w,x,y,z,count)]
+            last_end_time = x
+            last_start_time = y
+            count += 1
+            continue
+        if (y - last_start_time).total_seconds() < 180:
+            continue
+        if (x - last_end_time).total_seconds() < 180:
+            filtered_filtered_options = filtered_filtered_options[:-1]
+            count -= 1
+
+        last_start_time = y
+        last_end_time = x
+        filtered_filtered_options += [(w,x,y,z,count)]
+        count += 1
+
+    next_options = filtered_filtered_options
+
+    ###########################
+    ### ACTUAL BACKTRACKING ###
+    ###########################
+
+    # Write header, arrivals at destination and store those times for segment descriptions
+    last_time = {}
+    with open('../out/candidate_paths.csv', 'w+', encoding='utf-8') as f:
+        f.write("train_ix;train_id;variant;orig;dest;track_id;time_start;time_end;date\n")
+        for opt in next_options:
+            f.write(f"{train_to_insert}999{opt[4]};{train_to_insert};{opt[4]};{train_route[-1]};;{opt[0]};{datetime.strftime(opt[1], '%H:%M:%S')};;{datetime.strftime(opt[1], '%Y-%m-%d')}\n")
+            last_time[opt[4]] = opt[1]
+
+    for trafikplats in reversed(train_route[:-1]):
+        updated_options = []
+        # Iterate over each of the candidate paths
+        for track_id, end_time, start_time, startstop, train_id in next_options:
+            # At the start, we want the latest time, otherwise the earliest
+            # best_time keeps track of the earliest (or latest) departure time,
+            # best_time_arr keeps track of an arrival time if different
+            # and the tracks keep track of the corresponding tracks at the segment and station
+            if trafikplats != train_route[0]:
+                best_time = TIME_TO_DATETIME
+            else:
+                best_time = TIME_FROM_DATETIME
+            best_time_arr = 0
+            best_arrival_track = None
+            best_segment_track = None
+
+            # Test possible segment tracks
+            for segment_track in infra.segments[(trafikplats, last_vertex)].tracks:
+                if (trafikplats, last_vertex, segment_track) not in free_space_dict_segments:
+                    continue
+                if (trafikplats, last_vertex, segment_track) not in infra.N_segments or track_id not in infra.N_segments[(trafikplats, last_vertex, segment_track)]:
+                    continue
+
+                # Get free spaces and minimum running times
+                free_spaces = free_space_dict_segments[(trafikplats, last_vertex, segment_track)]
+                from_r = running_time[(trafikplats, last_vertex, "r", startstop)]
+                from_s = running_time[(trafikplats, last_vertex, "s", startstop)]
+
+                for free_space in free_spaces:
+                    # Should be exactly one case where this is not true
+                    if not free_space.second_start <= end_time <= free_space.second_end:
+                        continue
+
+                    # Get the interval which the train could have used at the start of the segment
+                    if end_time - timedelta(seconds=from_s) >= free_space.first_end:
+                        from_s_range = Interval(free_space.first_start, free_space.first_end)
+                    elif free_space.first_start <= end_time - timedelta(seconds=from_s) <= free_space.first_end:
+                        from_s_range = Interval(free_space.first_start, end_time - timedelta(seconds=from_s))
+                    else:
+                        # Magic value if no such interval exists
+                        from_s_range = 0
+
+                    # If a stop is possible at the previous station,
+                    # get the time it would depart from there (+ arrive)
+                    # TODO may be a problem when longer intervals are split due to rounding?
+                    if from_s_range != 0:
+                        # Try all possible tracks at the previous trafikplats
+                        for prev_track in infra.stations[trafikplats].tracks:
+                            if (trafikplats, last_vertex, prev_track) not in infra.N_stations or segment_track not in infra.N_stations[(trafikplats, last_vertex, prev_track)]:
+                                continue
+
+                            # Get intervals that correspond with the given original departure
+                            track_options = [v for v in backtrack_after_stop[(trafikplats, prev_track)] if v.orig_start <= start_time <= v.orig_end]
+
+                            # Get intersection of the two
+                            new_times = interval_utils.intersect_one_interval(from_s_range, track_options)
+
+                            if new_times == 0:
+                                continue
+
+                            # Get parked occupations and find relevant interval there
+                            with_original_times = station_parked_occupations[(trafikplats, prev_track)]
+                            for linked_interval in with_original_times:
+                                if linked_interval.start > new_times.end or linked_interval.end < new_times.start:
+                                    continue
+                                if start_time < linked_interval.orig_start or start_time > linked_interval.orig_end:
+                                    continue
+                                if trafikplats == train_route[0]:
+                                    # If we are finished, we want the LATEST departure time
+                                    new_time_option = min(linked_interval.end, new_times.end)
+                                    if new_time_option >= best_time:
+                                        best_segment_track = segment_track
+                                        best_arrival_track = prev_track
+                                        best_time = new_time_option
+                                elif linked_interval.orig_end == linked_interval.orig_start:
+                                    # Otherwise, the EARLIEST
+                                    new_time_option = max(linked_interval.start, new_times.start)
+                                    if new_time_option <= best_time:
+                                        best_segment_track = segment_track
+                                        best_arrival_track = prev_track
+                                        best_time = new_time_option
+
+                                        # And get the corresponding earliest possible arrival time
+                                        station_occ = [v for v in station_parked_occupations[(trafikplats, prev_track)] if v.orig_start == start_time and start_time == v.orig_end]
+                                        if len(station_occ) != 1:
+                                            print("sth may be wrong with station occ while backtracking", len(station_occ), start_time, station_occ)
+                                        best_time_arr = station_occ[0].start
+
+                    # Now analogous case for runthroughs
+                    # If we get a better time here, we go for the runthrough instead
+                    if end_time - timedelta(seconds=from_r) >= free_space.first_end:
+                        from_r_range = Interval(free_space.first_start, free_space.first_end)
+                    elif free_space.first_start <= end_time - timedelta(seconds=from_r) <= free_space.first_end:
+                        from_r_range = Interval(free_space.first_start, end_time - timedelta(seconds=from_r))
+                    else:
+                        from_r_range = 0
+
+                    if from_r_range != 0 and trafikplats != train_route[0]:
+                        for prev_track in infra.stations[trafikplats].tracks:
+                            if (trafikplats, last_vertex, prev_track) not in infra.N_stations or segment_track not in infra.N_stations[(trafikplats, last_vertex, prev_track)]:
+                                continue
+
+                            track_options = [v for v in backtrack_after_runthrough[(trafikplats, prev_track)] if v.orig_start <= start_time <= v.orig_end]
+
+                            new_times = interval_utils.intersect_one_interval(from_r_range, track_options)
+
+                            if new_times == 0:
+                                continue
+
+                            corresponding_track_options = [v for v in track_options if v.start <= new_times.start <= new_times.end <= v.end]
+
+                            if len(corresponding_track_options) > 1:
+                                raise Exception("Multiple corresponding tracks found. Maybe take first one?")
+
+                            corresponding_track_option = corresponding_track_options[0]
+
+                            # Two options: one starting point as a goal, or a parallel range of paths
+                            if corresponding_track_option.orig_end == corresponding_track_option.orig_start:
+                                new_time_option = max(corresponding_track_option.start, new_times.start)
+                                if new_time_option <= best_time:
+                                    best_segment_track = segment_track
+                                    best_arrival_track = prev_track
+                                    best_time = new_time_option
+                                    best_time_arr = 0
+                            else:
+                                time_diff_end = (start_time - corresponding_track_option.orig_start).total_seconds()
+                                new_time_option = corresponding_track_option.start + timedelta(seconds = time_diff_end)
+                                if new_times.start <= new_time_option <= new_times.end:
+                                    best_segment_track = segment_track
+                                    best_arrival_track = prev_track
+                                    best_time = new_time_option
+                                    best_time_arr = 0
+
+            print(best_time_arr, "/", best_time, trafikplats, best_arrival_track, last_vertex, best_segment_track)
+            with open('../out/candidate_paths.csv', 'a+', encoding='utf-8') as f:
+                f.write(
+                    f"{train_to_insert}999{train_id};"
+                    f"{train_to_insert};"
+                    f"{train_id};"
+                    f"{trafikplats};"
+                    f"{last_vertex};"
+                    f"{best_segment_track};"
+                    f"{datetime.strftime(best_time, '%H:%M:%S')};"
+                    f"{datetime.strftime(last_time[train_id], '%H:%M:%S')};"
+                    f"{datetime.strftime(best_time, '%Y-%m-%d')}\n")
+
+                if trafikplats == train_route[-1]:
+                    arr = best_time
+                    dep = ""
+                elif best_time_arr == 0:
+                    arr = best_time
+                    dep = best_time
+                else:
+                    arr = best_time_arr
+                    dep = best_time
+                last_time[train_id] = arr
+
+                f.write(
+                    f"{train_to_insert}999{train_id};"
+                    f"{train_to_insert};"
+                    f"{train_id};"
+                    f"{trafikplats};"
+                    f";"
+                    f"{best_segment_track};"
+                    f"{datetime.strftime(arr, '%H:%M:%S')};"
+                    f"{datetime.strftime(dep, '%H:%M:%S')};"
+                    f"{datetime.strftime(arr, '%Y-%m-%d')}\n")
+
+            if best_time_arr == 0:
+                updated_options += [(best_arrival_track, best_time, start_time, "r", train_id)]
+            else:
+                updated_options += [(best_arrival_track, best_time_arr, start_time, "s", train_id)]
+
+        last_vertex = trafikplats
+        next_options = updated_options
+
+    # prev_vertex = 0
+    #
+    # for (current_vertex, station_track) in station_parked_occupations.keys():
+    #     if prev_vertex != 0 and prev_vertex != current_vertex:
+    #         print("rr", running_time[(prev_vertex, current_vertex, "r", "r")],
+    #               "rs", running_time[(prev_vertex, current_vertex, "r", "s")],
+    #               "sr", running_time[(prev_vertex, current_vertex, "s", "r")],
+    #               "ss", running_time[(prev_vertex, current_vertex, "s", "s")])
+    #     prev_vertex = current_vertex
+
+    #    # print(current_vertex, station_track, [v for v in station_parked_occupations[(current_vertex, station_track)] if v.orig_start <= datetime.strptime("2021-01-20 10:40:18", "%Y-%m-%d %H:%M:%S") and datetime.strptime("2021-01-20 10:40:14", "%Y-%m-%d %H:%M:%S") <= v.orig_end])
+    #    # print(current_vertex, station_track,  [v for v in station_runthrough_occupations[(current_vertex, station_track)] if v.orig_start <= datetime.strptime("2021-01-20 10:40:18", "%Y-%m-%d %H:%M:%S") and datetime.strptime("2021-01-20 10:40:14", "%Y-%m-%d %H:%M:%S") <= v.orig_end])
+
+        # print(current_vertex, station_track, len(station_parked_occupations[(current_vertex, station_track)]) + len(station_runthrough_occupations[(current_vertex, station_track)]))
+        # print(current_vertex, station_track, station_parked_occupations[(current_vertex, station_track)] )
+        # print(current_vertex, station_track, station_runthrough_occupations[(current_vertex, station_track)] )
+    # print(end - start)
+    # with open('../out/running_times.txt', 'a+') as the_file:
+    #     the_file.write(f"{end-start}\n")
+
+
+

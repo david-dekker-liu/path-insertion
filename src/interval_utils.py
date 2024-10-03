@@ -10,7 +10,7 @@ def interpolate_single_time(lint, new_time):
 # Linearly interpolate the start_range at the origin when the interval is shortened
 def update_time_range(lint, new_start, new_end):
     if new_start < lint.start or new_end < lint.start or new_end > lint.end or new_start > lint.end or new_end < new_start:
-        raise Exception("The new time window is not contained in the old one.")
+        raise Exception("The new time window is not contained in the old one.", new_start, new_end, lint.start, lint.end)
 
     new_orig_start = interpolate_single_time(lint, new_start)
     new_orig_end = interpolate_single_time(lint, new_end)
@@ -288,5 +288,68 @@ def extend_parked_times(lint_list, free_spaces):
             else:
                 output += [LinkedInterval(lint.start, free_space.end, lint.orig_end, lint.orig_end)]
 
+    return output
 
+
+# Takes the union of a list with potentially overlapping intervals
+def merge_normal_lists(list_of_intervals):
+    events = []
+    curr_count = 0
+    last_start = 0
+
+    for interval in list_of_intervals:
+        events += [(interval.start, "start")]
+        events += [(interval.end, "end")]
+
+    events.sort(key=lambda x: x[0])
+    output = []
+
+    for event, event_type in events:
+        if curr_count == 0 and event_type == "start":
+            last_start = event
+        elif curr_count == 0 and event_type == "end":
+            raise Exception("No interval to end here")
+        elif curr_count == 1 and event_type == "end":
+            output += [Interval(last_start, event)]
+
+        if event_type == "start":
+            curr_count += 1
+        else:
+            curr_count -= 1
+
+    return output
+
+
+# Returns the start of the intersection of one interval with a list of intervals, all unlinked
+# WARNING assumes the list of intervals is ordered by time
+def intersect_one_interval(interval, list_of_intervals):
+    for test_interval in list_of_intervals:
+        if test_interval.start > interval.end or test_interval.end < interval.start:
+            continue
+        return Interval(max(test_interval.start, interval.start), min(test_interval.end, interval.end))
+
+    return 0
+
+# Returns the complement of a list of intervals within a certain time window
+# WARNING: assumes the list of intervals is a sorted list without any overlap!
+def interval_complement(list_of_intervals, window_start, window_end):
+    output = []
+    last_end = window_start
+
+    for interval in list_of_intervals:
+        if interval.end <= window_start:
+            continue
+
+        if interval.start <= window_start <= interval.end:
+            last_end = interval.end
+
+        if window_start < interval.start < window_end:
+            output += [Interval(last_end, interval.start)]
+            last_end = interval.end
+
+        if interval.start > window_end:
+            continue
+
+    if last_end < window_end:
+        output += [Interval(last_end, window_end)]
     return output

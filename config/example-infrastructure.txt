@@ -1,0 +1,92 @@
+# First a list of stations
+# Each entry contains (separated by ; characters) the abbreviation, full name and tracks (separated by spaces)
+Gsv;Göteborg Sävenäs;71 72 73
+Or1;Olskroken;72
+Or;Olskroken1;89
+
+# Segments are represented by mentioning a station with km-mark (separated by ;),
+# the available track ids on this segment,
+# and the end station with km-mark.
+# The next segment starts with the last station again.
+# When a different line is considered (i.e., the new segment should not start at the last station),
+# leave a line containing only an &-character
+Gsv;0
+U N
+Or1;1
+E
+Or;2
+&
+Bjh;90
+E
+Fdf;97
+E
+Brl;106
+E
+Skbl;112
+&
+Skbl;112
+E
+Rås;116
+
+# Each row has one lineplats, and the segment (between actual trafikplatser) where the linjeplats is located
+# There might be multiple between those
+Drt;Rås,Drt,Bäf
+Mon;Ed,Mon,Ko
+Hvs;Jögb,Hvs,Nhr,Tag,Måp
+Nhr;Jögb,Hvs,Nhr,Tag,Måp
+Tag;Jögb,Hvs,Nhr,Tag,Måp
+
+
+# Segments that should be seen as one when obtaining headways and margins
+# Separate the list of trafikplatser by ,-chars, then include a ;-char,
+# and include the (relative) block-separations.
+# 0-1 means that the whole section is one block,
+# 0-1-2 means that there are two equal-sized blocks,
+# 63.436-55.873-43.738 indicates two blocks that are not equal-sized (first smaller than last here)
+Rås,Drt,Bäf;0-1-2
+Bäf,Ed;0-1-2
+Ed,Mon,Ko;0-1-2
+
+# A list of conflicting transitions
+# A station in the middle of a single-track line has a shorthand
+# for generating the conflicts where simultaneous arrivals are allowed (parallel)
+# or when they are not allowed (non-parallel)
+# Each of those lines has (with ;-chars in between) the trafikplats, the type of arrivals
+# and a pair of previous and next station (with ,-char in between)
+
+# These transitions will be converted to full descriptions automatically
+# The full ones consist of (separated by ;-signs) the trafikplats of the conflict,
+# the type of conflict, the first movement and the second movement.
+# Each movement consists of "from_tpl,tracks,to_tpl,tracks".
+# One of the trafikplatser is the place of the conflict.
+# The other is the direction the train comes from/goes to, together with segment tracks.
+# Tracks are separated by a space.
+# The rules will be converted automatically to a list where only one track is included everywhere.
+# When all tracks at a tpl are included, the *-sign can be used.
+Ed;non-parallel;Ko,Bäf
+Bäf;non-parallel;Ed,Rås
+Rås;parallel;Skbl,Bäf
+Thn;gleis-wechsel;Thn,2 3 4,Öx,U;Öx,N,Thn,1 2 3 4
+Thn;gleis-wechsel;Thn,1,Öx,U;Öx,N,Thn,1
+Thn;gleis-wechsel;Thn,2 3 4,Veas,N;Veas,U,Thn,2 3 4
+Thn;gleis-wechsel-far-Thn;Thn,1,Veas,N;Veas,U,Thn,1 2 3 4
+Thn;block-diff;Veas,U,Thn,2 3 4;Thn,1 2 3 4,Veas,N
+Thn;block-diff;Öx,N,Thn,1 2 3 4;Thn,2 3 4,Öx,U
+
+# Lastly, the allowed connections between tracks
+# In the middle, write one (or more) segment tracks,
+# and surround those with the station tracks that can reach them
+# Write a line with only an &-symbol if the last station should not be repeated
+Gsv 72
+U
+Or1 72
+&
+Or1 72
+E
+Or 89
+A
+Gbm 2 3
+U
+Agb 2 3
+U
+Sue 2

@@ -26,13 +26,13 @@ def get_timetable(time_from, time_to, locations):
 
     # Read timetable databases, select possibly relevant days and join them
     df_input = pd.read_csv("../data/t21.csv", sep=",")
+    df = df_input[df_input["orig"].isin(locations) | df_input["dest"].isin(locations)]
 
     df_running_specs = pd.read_csv("../data/t21_running_days.csv", sep=",")
     df_running_specs["date_datetime"] = pd.to_datetime(df_running_specs['date'], format='%Y-%m-%d')
     df_running_specs = df_running_specs[(df_running_specs["date_datetime"] >= time_from_datetime_floored) & (df_running_specs["date_datetime"] <= time_to_datetime_ceiled)]
 
-    df = pd.merge(df_input, df_running_specs, on="train_ix")
-    df = df[df["orig"].isin(locations)]
+    df = pd.merge(df, df_running_specs, on="train_ix")
 
     print("Finished joining input tables")
 
@@ -69,12 +69,11 @@ def get_timetable(time_from, time_to, locations):
 
     print("Finished adjusting start times")
 
+    # TODO removed segment keys, improve this part
     df["segment_key"] = df.apply(lambda row: path_insertion.get_key(row["orig"], row["dest"], row["track_id"]), axis=1)
     df["segment_type"] = df.apply(lambda row: path_insertion.get_segment_type_from_row(row), axis=1)
     df["min_headway_before"] = df.apply(lambda row: headway_functions.headway_before(row), axis=1)
     df["min_headway_after"] = df.apply(lambda row: headway_functions.headway_after(row), axis=1)
-
-    df = df[df["orig"].isin(locations) | df["dest"].isin(locations)]
 
     df_filtered = df[((df["time_start_corrected"] >= time_from_datetime_min10) & (
                 df["time_start_corrected"] <= time_to_datetime_plus10))
@@ -85,7 +84,7 @@ def get_timetable(time_from, time_to, locations):
 
     print("Completed preprocessing of T21\n")
 
-    return df, df_filtered
+    return df_filtered.drop(columns=["stn_ix", "activity", "stop_is_possible", "date_datetime", "time_end_hour", "time_end_hour_modulo", "time_end_plus_days", "time_end_reformat", "time_end_date_and_time", "time_end_datetime", "time_end_corrected_time_str", "time_end_corrected_date_str", "time_start_hour", "time_start_hour_modulo", "time_start_plus_days", "time_start_reformat", "time_start_date_and_time", "time_start_datetime", "time_start_corrected_time_str", "time_start_corrected_date_str"])
 
 
 # Example of conflicting track numbers:
@@ -136,3 +135,89 @@ def verify_timetable_consistency(timetable):
 
             curr_descr = f"Current record: {segment_key} at time {row['time_start']} to time {row['time_end']} on {row['date']}. Train_ix {row['train_ix']}, train_id {row['train_id']}."
             prev_end_time = current_end_time
+
+
+# Takes a timetable dataframe, a list of stations to consider and the name of a log file
+def detect_track_allocation_problems(t21, stations, log_file):
+    for station in stations:
+        print(station)
+        df = t21[(t21["orig"] == station) & (t21["dest"].isnull())].sort_values("time_start_corrected")
+        events = []
+        for index, row in df.iterrows():
+            events += [("start", row["time_start_corrected"] - timedelta(0, 70), row["track_id"], row["train_id"], row["train_ix"])]
+            events += [("end", row["time_end_corrected"] + timedelta(0, 70), row["track_id"], row["train_id"], row["train_ix"])]
+        events.sort(key=lambda x: x[1])
+
+        track_dict = {}
+        for event in events:
+            # print(event)
+            if event[0] == "start" and event[2] in track_dict:
+                print("problems between", track_dict[event[2]], "and", (event[3], event[4]), "at track", event[2])
+            elif event[0] == "start":
+                track_dict[event[2]] = (event[3], event[4])
+            else:
+                track_dict.pop(event[2], None)
+        print("")
+
+
+# Replaces linjeplatser one by one
+# The first occurrence of the linjeplats is replaced by the last dest-value with that linjeplats
+# All other rows with the linjeplats are removed
+# TODO first split train numbers into different ids, this function collapses under back-and-forth behavior
+# TODO verify that no trains start and end in the linjeplats, the function also collapses then
+def remove_linjeplatser(t21, linjeplatser):
+    for linjeplats in linjeplatser:
+        t21_to_change = t21[(t21["orig"] == linjeplats) | (t21["dest"] == linjeplats)]
+        train_ixs = t21_to_change["train_ix"].drop_duplicates().tolist()
+
+        for train_ix in train_ixs:
+            relevant_df = t21_to_change[t21_to_change["train_ix"] == train_ix]
+            first_index = None
+            other_indices = []
+            last_dest = ""
+            last_time = ""
+            last_time_corr = ""
+
+            for index, row in relevant_df.iterrows():
+                if first_index is None:
+                    first_index = index
+                else:
+                    other_indices += [index]
+
+                last_dest = row["dest"]
+                last_time = row["time_end"]
+                last_time_corr = row["time_end_corrected"]
+            t21.loc[first_index, ["dest", "time_end", "time_end_corrected"]] = [last_dest, last_time, last_time_corr]
+            t21.drop(other_indices, inplace=True)
+
+    return t21
+
+
+def get_running_times(running_times_file, lineplatser, speed_profile):
+    technical_running_times = pd.read_csv(running_times_file)
+
+    running_time = {}
+    for index, row in technical_running_times[technical_running_times["train_type"] == speed_profile].iterrows():
+        running_time[(row["stn_id_from"], row["stn_id_to"], "r", "r")] = row["rt_forw_pp"]
+        running_time[(row["stn_id_from"], row["stn_id_to"], "r", "s")] = row["rt_forw_ps"]
+        running_time[(row["stn_id_from"], row["stn_id_to"], "s", "r")] = row["rt_forw_sp"]
+        running_time[(row["stn_id_from"], row["stn_id_to"], "s", "s")] = row["rt_forw_ss"]
+        running_time[(row["stn_id_to"], row["stn_id_from"], "r", "r")] = row["rt_forw_pp"]
+        running_time[(row["stn_id_to"], row["stn_id_from"], "r", "s")] = row["rt_forw_ps"]
+        running_time[(row["stn_id_to"], row["stn_id_from"], "s", "r")] = row["rt_forw_sp"]
+        running_time[(row["stn_id_to"], row["stn_id_from"], "s", "s")] = row["rt_forw_ss"]
+
+    for linjeplats in lineplatser:
+        segment = lineplatser[linjeplats]
+        for route in segment, list(reversed(segment)):
+            for rs_start in ["r", "s"]:
+                for rs_end in ["r", "s"]:
+                    runtime = 0
+                    runtime += running_time[(route[0], route[1], rs_start, "r")]
+                    runtime += running_time[(route[-2], route[-1], "r", rs_end)]
+                    for i in range(len(lineplatser) - 2):
+                        runtime += running_time[(route[i+1], route[i+2], "r", "r")]
+                    running_time[(route[0], route[-1], rs_start, rs_end)] = runtime
+
+    print(running_time)
+    return running_time

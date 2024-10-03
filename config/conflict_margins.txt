@@ -1,0 +1,8 @@
+non-parallel-diff:180
+block-diff:60
+öx-ost-west:180
+öx-west-süd-large:240
+öx-west-süd-small:300
+gleis-wechsel-far-öx:300
+gleis-wechsel:240
+gleis-wechsel-far-Thn:300
