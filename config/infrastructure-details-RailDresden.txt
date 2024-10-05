@@ -1,0 +1,470 @@
+M;Malmö C;5 6 7 8 9 10 11
+Mgb;Malmö Godsbangård;1 2 3 4 5 6 7 8 9 10 59 61 62 63 64
+MGB1;Malmö Godsbangård 1;59 61 62 63 64
+Al;Arlöv;59 63
+Lma;Lomma;1
+Fl;Flädie;1 2
+Sie;Stävie;1 2
+Kg;Kävlinge;1 2 3
+Tp;Teckomatorp;1 2
+Sal;Svalöv;1 2
+Kd;Kågeröd;1 2
+Bih;Billesholm;1 2
+Åp;Åstorp;1 2 3 4 5
+Ä;Ängelholm;1 2
+Baa;Barkåkra;1 2
+Vip;Viarp;2 4
+För;Förslöv;1 2 3 4
+Bån;Båstad Norra;1 2 3 4
+Laov;Laholm Västra;1 2 3 4
+Ea;Eldsberga;1 2
+Kst;Kistinge;1 2
+Hdr;Halmstads Rangerbangård;21 22 71 72
+Hd;Halsmtad C;1 2 3 4 5
+Fur;Furet;51 52
+Btp;Biskopstorp;1 2
+Bp;Brännarp;2 3
+He;Heberg;1 2
+Fab;Falkenberg;1 2 3 4
+Teo;Torebo;1 2
+Tye;Tyllered;1 2 3
+Haa;Hamra;1 2
+Vb;Varberg;3 4 5 6 7 8
+Vrö;Värö;1 2 3
+Få;Frillesås;2 3
+Åsa;Åsa;1 2
+Lek;Lekarekulle;1 2 3
+Kb;Kungsbacka;2 3
+Khe;Kungsbacka Hede;1 2
+Lgd;Ledsgård;1 2 3
+Ag;Anneberg;1 2
+Ldo;Lindome;1 2
+Krd;Kållered;1 2
+Mdn;Mölndals Nedre;1 2 3
+Am;Almedal;1 2
+Lis;Liseberg;85 86
+Gro;Gubbero;85 86
+G;Göteborg C;1 2 3 4 5 6 7 8 9 10
+
+M;22
+61 62 63 64
+Mgb;24
+59 61 62 63 54
+MGB1;25
+59 63
+Al;27
+E
+Lma;32
+E
+Fl;37
+E
+Sie;40
+E
+Kg;46
+&
+Kg;34
+E
+Tp;43
+E
+Sal;49
+E
+Kd;59
+E
+Bih;69
+E
+Åp;78
+E
+Ä;93
+&
+Ä;118
+U N
+Baa;123
+U N
+Vip;128
+U N
+För;131
+U N
+Bån;141
+U N
+Laov;151
+U N
+Ea;162
+U N
+Kst;169
+71 72
+Hdr;173
+71 72 R
+Hd;174
+U N
+Fur;176
+U N
+Btp;184
+U N
+Bp;195
+U N
+He;206
+U N
+Fab;217
+U N
+Teo;222
+U N
+Tye;231
+U N
+Haa;239
+E
+Vb;246
+U N
+Vrö;262
+U N
+Få;271
+U N
+Åsa;277
+U N
+Lek;282
+U N
+Kb;294
+U N
+Khe;297
+U N
+Lgd;299
+U N
+Ag;300
+U N
+Ldo;305
+U N
+Krd;310
+U N
+Mdn;314
+U N
+Am;318
+U N
+Lis;320
+85 86
+Gro;321
+85 86
+G;323
+
+Fud;Sie,Fud,Kg
+Ali;Al,Ali,Lma
+
+Kg,Tp;0-1-2
+Sal,Kd;0-1-2
+Kd,Bih;0-1-2
+Bih,Åp;0-1-2
+Åp,Ä;0-1-2
+
+Fl;parallel;Lma;Sie
+Sie;parallel;Fl;Kg
+Sal;parallel;Tp;Kd
+Kd;parallel;Sal;Bih
+Bih;parallel;Kd;Åp
+Al;block-diff;Lma,*,Al,*;Al,*,Lma,*
+Mgb;block-diff;MGB1,59,Mgb,1 2 3 4 5 6 7 8 9 10 59;Mgb,1 2 3 4 5 6 7 8 9 10 59,MGB1,59
+MGB1;block-diff;Al,63,Mgb,61 62 63 64;Mgb,61 62 63 64,Al,63
+Kg;block-diff;Gnb,*,Kg,1 2;Kg,1 2 3,Sie,*
+Kg;block-diff;Sie,*,Kg,1 2 3;Kg,1 2,Gnb,*
+Kg;gleis-wechsel;Kg,1 2,Gnb,*;Sie,*,Kg,1 2 3
+Kg;gleis-wechsel;Kg,3,Gnb,*;Sie,*,Kg,3
+Kg;gleis-wechsel;Kg,1 2 3,Sie,*;Gnb,*,Kg,1 2
+Kg;gleis-wechsel;Kg,3,Sie,*;Gnb,*,Kg,3
+Kg;block-diff;Dös,*,Kg,*;Kg,1 2 3,Tp,*
+Kg;block-diff;Tp,*,Kg,1 2 3;Kg,*,Dös,*
+Kg;gleis-wechsel-far;Kg,1 2 3,Tp,*;Dös,*,Kg,*
+Kg;gleis-wechsel-far;Kg,*,Dös,*;Tp,*,Kg,1 2 3
+Tp,block-diff;Mar,*,Tp,*;Tp,1 2,Kg,*
+Tp;block-diff;Kg,*,Tp,1 2;Tp,*,Mar,*
+Tp;gleis-wechsel;Tp,1 2,Kg,*;Mar,*,Tp,*
+Tp;gleis-wechsel;Tp,*,Mar,*;Kg,*,Tp,1 2
+Bih;block-diff;Åp,*,Bih,3 4;Bih 1 2,Åp,*
+Bih;block-diff;Åp,*,Bih,1 2;Bih 3 4,Åp,*
+Åp;block-diff;Ä,*,Åp,1 2;Åp,1 2,Käb,*
+Åp;block-diff;Ä,*,Åp,3 4 5;Åp,1 2,Käb,*
+Åp;block-diff;Ä,*,Åp,3 4 5;Åp,3 4 5,Käb,*
+Åp;block-diff;Käb,*,Åp,1 2;Åp,1 2,Ä,*
+Åp;block-diff;Käb,*,Åp,1 2;Åp,3 4 5,Ä,*
+Åp;block-diff;Käb,*,Åp,3 4 5;Åp,3 4 5,Ä,*
+Åp;gleis-wechsel;Åp,1 2,Ä,*;Käb,*,Åp,1 2
+Åp;gleis-wechsel;Åp,3 4 5,Ä,*;Käb,*,Åp,3 4 5
+Åp;gleis-wechsel;Åp,3 4 5,Ä,*;Käb,*,Åp,1 2
+Åp;gleis-wechsel;Åp,1 2,Käb,*;Ä,*,Åp,1 2
+Åp;gleis-wechsel;Åp,3 4 5,Käb,*;Ä,*,Åp,3 4 5
+Åp;gleis-wechsel;Åp,1 2,Käb,*;Ä,*,Åp,3 4 5
+Åp;block-diff;Aal,*,Åp,2 3 4 5;Åp,1 2 3 4,Bih,*
+Åp;block-diff;Bjuv,*,Åp,2 3 4 5;Åp,1 2 3 4,Bih,*
+Åp;block-diff;Bih,*,Åp,1 2 3 4;Åp,2 3 4 5,Aal,*
+Åp;block-diff;Bih,*,Åp,1 2 3 4;Åp,2 3 4 5,Bjuv,*
+Åp;gleis-wechsel;Åp,2 3 4 5,Aal,*;Bih,*,Åp,1 2 3 4
+Åp;gleis-wechsel;Åp,1,Aal,*;Bih,*,Åp,1
+Åp;gleis-wechsel;Åp,5,Aal,*;Bih,*,Åp,5
+Åp;gleis-wechsel;Åp,2 3 4 5,Bjuv,*;Bih,*,Åp,1 2 3 4
+Åp;gleis-wechsel;Åp,1,Bjuv,*;Bih,*,Åp,1
+Åp;gleis-wechsel;Åp,5,Bjuv,*;Bih,*,Åp,5
+Åp;gleis-wechsel;Åp,1 2 3 4,Bih,*;Aal,*,Åp,2 3 4 5
+Åp;gleis-wechsel;Åp,1,Bih,*;Aal,*,Åp,1
+Åp;gleis-wechsel;Åp,5,Bih,*;Aal,*,Åp,5
+Åp;gleis-wechsel;Åp,1 2 3 4,Bih,*;Bjuv,*,Åp,2 3 4 5
+Åp;gleis-wechsel;Åp,5,Bih,*;Bjuv,*,Åp,5
+Åp;gleis-wechsel;Åp,5,Bih,*;Bjuv,*,Åp,5
+Ä;block-diff;Vh,*,Ä,1;Ä,2,Åp,*
+Ä;gleis-wechsel;Ä,1 2,Vh,*;Åp,*,Ä,2
+Ä;gleis-wechsel;Ä,1,Vh,*;Åp,*,Ä,1
+Ä;block-diff;Baa,N,Ä,2;Ä,1,Baa,U
+Ä;block-diff;Baa,N,Ä,1;Ä,2,Baa,U
+Ä;gleis-wechsel;Ä,1 2,Baa,U;Baa,N,Ä,1 2
+Vip;block-diff;För,U,Vip,2;Vip,4,För,U
+För;block-diff;Vip,U,För,3 4;För,5,Vip,U
+Ea;block-diff;Kst,N,Ea,1;Ea,10,Kst,U
+Ea;gleis-wechsel;Ea,10,Kst,U;Kst,N,Ea,1
+Hdr;block-diff;Kst,72,Hdr,72;Hdr,21 22,Kst,71
+Hdr;gleis-wechsel;Hdr,21 22,Kst,71;Kst,72,Hdr,21 22 72
+Hdr;block-diff;Hd,71,Hdr,21 22;Hdr,72,Hd,72
+Hdr;gleis-wechsel;Hdr,21 22 72,Hd,72;Hd,71,Hdr,21 22
+Fur,block-diff;Hd,U,Fur,50;Fur,51,Hd,N
+Fur;gleis-wechsel;Fur,51,Hd,N;Hd,U,Fur,50
+Tye;block-diff;Teu,U,Tye,2;Tye,1,Teo,N
+Tye;gleis-wechsel;Tye,1,Teo,N;Teo,U,Tye,1 2
+Tye;block-diff;Haa,N,Tye,1;Tye,2,Haa,U
+Tye;gleis-wechsel;Tye,1 2,Haa,U;Haa,N,Tye,1
+Haa;block-diff;Vb,E,Haa,1;Haa,2,Vb,E
+Haa;block-diff;Vb,E,Haa,999;Haa,2,Vb,E
+Haa;block-diff;Vb,E,Haa,1;Haa,999,Vb,E
+Vb;block-diff;Haa,E,Vb,*;Vb,*,Haa,E
+Vb;block-diff;Vrö,N,Vb,4 5 6 7 8;Vb,3 4 5 6 7 8,Vrö,U
+Vb;gleis-wechsel;Vb,3 4,Vrö,U;Vrö,N,Vb,4 5 6 7 8
+Vb;gleis-wechsel;Vb,3,Vrö,U;Vrö,N,Vb,3
+Vrö;block-diff;Vb,U,Vrö,2;Vrö,1,Vb,N
+Vrö;gleis-wechsel;Vrö,1,Vb,N;Vb,U,Vrö,2 1
+Vrö;block-diff;Få,N,Vrö,1;Vrö,2,Få,U
+Vrö;gleis-wechsel;Vrö,1 2,Få,U;Få,N,Vrö,1
+Lek;block-diff;Åsa,U,Lek,2;Lek,1,Åsa,N
+Lek;gleis-wechsel;Lek,1,Åsa,N;Åsa,U,Lek,2 1
+Lek;block-diff;Kb,N,Lek,1;Lek,2,Kb,U
+Lek;gleis-wechsel;Lek,1 2,Kb,U;Kb,N,Lek,1
+Kb;block-diff;Khe,N,Kb,2;Kb,1,Khe,U
+Kb;gleis-wechsel-far;Kb,1,Khe,U;Khe,N,Kb,1 2
+Kb;block-diff;Lek,U,Kb,1;Kb,2,Lek,N
+Kb;gleis-wechsel-semi;Kb,1 2,Lek,N;Lek,U,Kb,1
+Lgd;block-diff;Ag,N,Lgd,2;Lgd,1,Ag,U
+Lgd;gleis-wechsel;Lgd,1,Ag,U;Ag,N,Lgd,1 2
+Lgd;block-diff;Khe,U,Lgd,1;Lgd,2,Khe,N
+Lgd;gleis-wechsel-semi;Lgd,1 2,Khe,N;Khe,U,Lgd,1
+Mdn;block-diff;Am,N,Mdn,2;Mdn,1,Am,U
+Mdn;gleis-wechsel-far;Mdn,1,Am,U;Am,N,Mdn,1 2
+Mdn;block-diff;Krd,U,Mdn,1;Mdn,2,Krd,N
+Mdn;gleis-wechsel;Mdk,1 2,Krd,N;Krd,U,Mdn,1
+
+Mgb;1 2 3 4 5 6 7 8 9 10 59
+59
+MGB1;59
+59
+Al 59
+&
+Al 59
+59
+MGB1;59
+59
+Mgb;1 2 3 4 5 6 7 8 9 10 59
+&
+M;5 6 7 8 9 10 11
+63
+Mgb 63
+63
+MGB1 63
+&
+M;5 6 7 8 9 10 11
+64
+Mgb 64
+64
+MGB1 64
+&
+MGB1 61
+61
+Mgb 61
+61
+M;5 6 7 8 9 10 11
+&
+MGB1 62
+62
+Mgb 62
+62
+M;5 6 7 8 9 10 11
+&
+MGB1 61 62 63 64
+63
+Al 63
+&
+Al 63
+63
+MGB1 61 62 63 64
+&
+Al 59 63
+E
+Lma 1
+E
+Fl 1 2
+E
+Sie 1 2
+E
+Kg 1 2 3
+E
+Tp 1 2
+E
+Sal 1 2
+E
+Kd 1 2
+E
+Bih 1 2
+E
+Åp 1 2 3 4 5
+E
+Ä 1 2
+U
+Baa 1
+U
+Vip 4
+U
+För 3 4
+U
+Bån 1 2
+U
+Laov 3 4
+U
+Ea 2
+U
+Kst 2
+72
+Hdr 21 22 72
+72
+Hd 1 2
+U
+Fur 52
+U
+Btp 2
+U
+Bp 3
+U
+He 1
+U
+Fab 3 4
+U
+Teo 2
+U
+Tye 1 2
+U
+Haa 2
+E
+Vb 3 4 5 6 7 8
+U
+Vrö 1 2
+U
+Få 3
+U
+Åsa 1
+U
+Lek 1 2
+U
+Kb 3 1
+U
+Khe 2
+U
+Lgd 3 1
+U
+Ag 2
+U
+Ldo 2
+U
+Krd 1
+U
+Mdn 3 1
+U
+Am 1
+U
+Lis 85
+85
+Gro 85
+&
+Gro 86
+86
+Lis 86
+N
+Am 2
+N
+Mdn 2 1
+N
+Krd 2
+N
+Ldo 1
+N
+Ag 1
+N
+Lgd 2 1
+N
+Khe 1
+N
+Kb 2 1
+N
+Lek 1 3
+N
+Åsa 2
+N
+Få 2
+N
+Vrö 1 3
+N
+Vb 3 4 5 6 7 8
+E
+Haa 1
+N
+Tye 1 3
+N
+Teo 1
+N
+Fab 1 2
+N
+He 2
+N
+Bp 2
+N
+Btp 1
+N
+Fur 51
+N
+Hd 3 4 5
+71
+Hdr 21 22 71
+71
+Kst 1
+N
+Ea 1
+N
+Laov 1 2
+N
+Bån 3 4
+N
+För 1 2
+N
+Vip 2
+N
+Baa 2
+N
+Ä 1 2
+E
+Åp 1 2 3 4 5
+E
+Bih 1 2
+E
+Kd 1 2
+E
+Sal 1 2
+E
+Tp 1 2
+E
+Kg 1 2 3
+E
+Sie 1 2
+E
+Fl 1 2
+E
+Lma 1
+E
+Al 59 63

@@ -113,21 +113,7 @@ def get_station_track_list(df, loc):
     return expected_result
 
 
-if __name__ == '__main__':
-    infra = Infrastructure("../config/infrastructure-details-SE.txt", "../config/conflict_margins.txt")
-    fullstart = time.time()
-
-    # Time frame to be considered
-    TIME_FROM = "2021-01-20 07:00"
-    TIME_TO = "2021-01-20 14:00"
-    TIME_FROM_DATETIME = datetime.strptime(TIME_FROM, "%Y-%m-%d %H:%M")
-    TIME_TO_DATETIME = datetime.strptime(TIME_TO, "%Y-%m-%d %H:%M")
-
-    # Hard-coded train route at the moment
-    # Segments are derived from that
-    # train_route = ["Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
-    train_route = ["Gbm", "Agb", "Sue", "Bhs", "Nöe", "Nol", "Än", "Alh", "Les", "Tbn", "Vpm", "Veas", "Thn", "Öx", "Bjh", "Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
-    # train_route = ["Gsv", "Or1", "Or", "Gbm", "Agb", "Sue", "Bhs", "Nöe", "Nol", "Än", "Alh", "Les", "Tbn", "Vpm", "Veas", "Thn", "Öx", "Bjh", "Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
+def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time, t21, TIME_FROM_DATETIME, TIME_TO_DATETIME, train_route, output_file, filter_close_paths):
     segments = [(train_route[i], train_route[i+1]) for i in range(len(train_route) - 1)]
 
     # Get all station tracks for which we need precomputations
@@ -145,27 +131,6 @@ if __name__ == '__main__':
     relevant_segment_tracks = {}
     for segment in segments:
         relevant_segment_tracks[segment] = [v[2] for v in relevant_segment_tracks_keys if (v[0] == segment[0] and v[1] == segment[1]) or (v[1] == segment[0] and v[0] == segment[1])]
-
-    t21 = timetable_creation.get_timetable(TIME_FROM, TIME_TO, train_route)
-    t21 = timetable_creation.remove_linjeplatser(t21, ["Drt", "Mon"])
-    t21.to_csv("../data/filtered_t21.csv", sep=";")
-    # t21 = pd.read_csv("../data/filtered_t21.csv", sep=";")
-    # timetable_creation.detect_track_allocation_problems(t21, train_route, "../out/log.txt")
-
-    train_to_insert = 45693
-    speed_profile = "GB201010"
-    running_time = timetable_creation.get_running_times("../data/t21_technical_running_times.csv", infra.linjeplatser, speed_profile)
-
-    print(infra.stations)
-    print("Get station free spaces")
-    free_space_dict_stations = free_space_detection.get_free_spaces_stations(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME, infra.stations)
-    print(free_space_dict_stations)
-    print("Get transition free spaces")
-    free_space_dict_transitions = free_space_detection.get_free_spaces_transitions(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME, infra.transitions)
-    print(free_space_dict_transitions)
-    print("Get segment free spaces")
-    free_space_dict_segments = free_space_detection.get_free_spaces_segments(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME, segments, infra)
-    print(free_space_dict_segments)
 
     # Get minimum running time for the full path
     min_time = 0
@@ -185,9 +150,6 @@ if __name__ == '__main__':
     candidate_track_occupations = {}
     segment_track_occupations_at_start = {}
     segment_track_occupations_at_end = {}
-
-    start = time.time()
-    print("preprocessing: ", start-fullstart)
 
     # Initialize the dynamic-ish program at the start location
     # Initial run-through is impossible, all free spaces at all tracks give possible departures
@@ -370,9 +332,9 @@ if __name__ == '__main__':
             last_start_time = y
             count += 1
             continue
-        if (y - last_start_time).total_seconds() < 180:
+        if filter_close_paths and (y - last_start_time).total_seconds() < 180:
             continue
-        if (x - last_end_time).total_seconds() < 180:
+        if filter_close_paths and (x - last_end_time).total_seconds() < 180:
             filtered_filtered_options = filtered_filtered_options[:-1]
             count -= 1
 
@@ -389,7 +351,7 @@ if __name__ == '__main__':
 
     # Write header, arrivals at destination and store those times for segment descriptions
     last_time = {}
-    with open('../out/candidate_paths.csv', 'w+', encoding='utf-8') as f:
+    with open(output_file, 'w+', encoding='utf-8') as f:
         f.write("train_ix;train_id;variant;orig;dest;track_id;time_start;time_end;date\n")
         for opt in next_options:
             f.write(f"{train_to_insert}999{opt[4]};{train_to_insert};{opt[4]};{train_route[-1]};;{opt[0]};{datetime.strftime(opt[1], '%H:%M:%S')};;{datetime.strftime(opt[1], '%Y-%m-%d')}\n")
@@ -529,7 +491,7 @@ if __name__ == '__main__':
                                     best_time_arr = 0
 
             print(best_time_arr, "/", best_time, trafikplats, best_arrival_track, last_vertex, best_segment_track)
-            with open('../out/candidate_paths.csv', 'a+', encoding='utf-8') as f:
+            with open(output_file, 'a+', encoding='utf-8') as f:
                 f.write(
                     f"{train_to_insert}999{train_id};"
                     f"{train_to_insert};"
@@ -593,3 +555,53 @@ if __name__ == '__main__':
 
 
 
+
+if __name__ == '__main__':
+    m_infra = Infrastructure("../config/infrastructure-details-SE.txt", "../config/conflict_margins.txt")
+    fullstart = time.time()
+
+    # Time frame to be considered
+    m_TIME_FROM = "2021-05-04 07:00"
+    m_TIME_TO = "2021-05-04 14:00"
+    m_TIME_FROM_DATETIME = datetime.strptime(m_TIME_FROM, "%Y-%m-%d %H:%M")
+    m_TIME_TO_DATETIME = datetime.strptime(m_TIME_TO, "%Y-%m-%d %H:%M")
+
+    # Other settings
+    m_output_file = "../out/candidate_paths.csv"
+    m_filter_close_paths = True
+
+    # Hard-coded train route at the moment
+    # Segments are derived from that
+    # m_train_route = ["Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
+    m_train_route = ["Gbm", "Agb", "Sue", "Bhs", "Nöe", "Nol", "Än", "Alh", "Les", "Tbn", "Vpm", "Veas", "Thn", "Öx", "Bjh", "Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
+    # m_train_route = ["Gsv", "Or1", "Or", "Gbm", "Agb", "Sue", "Bhs", "Nöe", "Nol", "Än", "Alh", "Les", "Tbn", "Vpm", "Veas", "Thn", "Öx", "Bjh", "Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
+
+    m_t21 = timetable_creation.get_timetable(m_TIME_FROM, m_TIME_TO, m_train_route)
+    m_t21 = timetable_creation.remove_linjeplatser(m_t21, ["Drt", "Mon"])
+    m_t21.to_csv("../data/filtered_t21.csv", sep=";")
+    # m_t21 = pd.read_csv("../data/filtered_t21.csv", sep=";")
+    # timetable_creation.detect_track_allocation_problems(t21, train_route, "../out/log.txt")
+
+    m_train_to_insert = 45693
+    m_speed_profile = "GB201010"
+    m_running_time = timetable_creation.get_running_times("../data/t21_technical_running_times.csv", m_infra.linjeplatser,
+                                                        m_speed_profile)
+    m_segments = [(m_train_route[i], m_train_route[i + 1]) for i in range(len(m_train_route) - 1)]
+
+    print(m_infra.stations)
+    print("Get station free spaces")
+    free_space_dict_stations = free_space_detection.get_free_spaces_stations(m_t21, m_train_to_insert, m_TIME_FROM_DATETIME, m_TIME_TO_DATETIME, m_infra.stations)
+    print(free_space_dict_stations)
+    print("Get transition free spaces")
+    free_space_dict_transitions = free_space_detection.get_free_spaces_transitions(m_t21, m_train_to_insert, m_TIME_FROM_DATETIME, m_TIME_TO_DATETIME, m_infra.transitions)
+    print(free_space_dict_transitions)
+    print("Get segment free spaces")
+    free_space_dict_segments = free_space_detection.get_free_spaces_segments(m_t21, m_train_to_insert, m_TIME_FROM_DATETIME, m_TIME_TO_DATETIME, m_segments, m_infra)
+    print(free_space_dict_segments)
+
+    end_of_prep = time.time()
+    print("Preparation time", end_of_prep - fullstart)
+
+    generate_candidate_paths(m_infra, m_train_to_insert, m_speed_profile, m_running_time, m_t21, m_TIME_FROM_DATETIME, m_TIME_TO_DATETIME, m_train_route, m_output_file, m_filter_close_paths)
+    end_of_alg = time.time()
+    print("Running time", end_of_alg - end_of_prep)

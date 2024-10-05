@@ -4,5 +4,7 @@ block-diff:60
 öx-west-süd-large:240
 öx-west-süd-small:300
 gleis-wechsel-far-öx:300
-gleis-wechsel:240
+gleis-wechsel:180
+gleis-wechsel-semi:210
+gleis-wechsel-far:240
 gleis-wechsel-far-Thn:300
