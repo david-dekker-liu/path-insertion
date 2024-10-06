@@ -45,6 +45,76 @@ Am;Almedal;1 2
 Lis;Liseberg;85 86
 Gro;Gubbero;85 86
 G;Göteborg C;1 2 3 4 5 6 7 8 9 10
+Or;Olskroken;71 72
+Or1;Olskroken växlar Gustavsplatsen;71 72
+Gsv;Göteborg Sävenäs;71 72 87
+Säv;Sävenäs;1 2
+Sel;Sävedalen;1 2
+P;Partille;1 2
+Jv;Jonsered Västra;1 2
+J;Jonsered Östra;1 2
+Apn;Aspen;1 2
+Asd;Aspedalen;1 2
+Lr;Lerum;0 1 2 3
+Sn;Stenkullen;1 2 3 4
+Fd;Floda;1 2 3
+Ndv;Norsesund Västra;1 2
+Ns;Norsesund;1 2
+Vbd;Västra Bodarna;1 2
+Bgs;Bryngenäs;1 2
+A;Alingsås;1 2 3 4
+Agg;Algutsgården;1 2 3 4
+Vgå;Vårgårda;1 2 3
+Hr;Herrljunga;3 4 5 6
+Kä;Källeryd;1 2
+Fby;Floby;1 2 3
+F;Falköping;1 2 3 4 5 6 7
+Fn;Falköping Norra;31 32 33 34
+Ss;Stenstorp;1 2 3
+Rmtp;Regumatorp;1 2 3
+Sk;Skövde;1 2 3 4 5
+Vä;Väring;2 3 4
+Mh;Moholm;1 2 3
+T;Töreboda;1 2 3
+Sle;Slätte;1 2 3
+Äl;Älgerås;2 3
+Gdö;Gårdsjö;1 2 3 4
+Fa;Finnerödja;1 2
+Lå;Laxå;1 2 3 4 5
+Lln;Linddalen;1 2
+Vt;Vretstorp;1 2
+Öj;Östansjö;2 3
+Täl;Tälle;2 3
+Hrbg;Hallsbergs Rangerbangård;2 3 11 12 13 14 15 16 17 18
+Hpbg;Hallsbergs Personbangård;1 2 3 4 5 6
+På;Pålsboda;1 2
+Km;Kilsmo;1 2
+Hgö;Högsjö;2 3
+Vr;Vingåker;1 2 3
+Bt;Baggetorp;1 2
+K;Katrineholm;1 2 3 4
+Spn;Stolpstugan;1 2
+Sde;Sköldinge;1 2
+Fle;Flen;1 2 3 4
+Skv;Skeboksvarn;2 3 4
+Sp;Sparreholm;1 2 3 4
+Nsj;Nyckelsjön;1 2
+Sh;Stjärnhov;1 2 3
+B;Björnlunda;1 2
+Koe;Kolke;1 2 3
+Gn;Gnesta;1 2 3 4
+Mö;Mölnbo;1 2
+Jn;Järna;1 2 3 4 5
+Soö;Södertälje Syd Övre;5 6 7 8
+Msj;Malmsjö;1 2
+Bjn;Björnkulla;1 2
+Flb;Flemingsberg;3 6
+Hu;Huddinge;1 4
+Sta;Stuvsta;1 4
+Äs;Älvsjö;2 5 10
+Åbe;Årstaberg;3 4
+Sst;Stockholms Södra;3 4
+Cst;Stockholms Central;10 11 12 13 14 15 16 17 18 19
 
 M;22
 61 62 63 64
@@ -143,6 +213,148 @@ Lis;320
 Gro;321
 85 86
 G;323
+&
+G;0
+U N
+Or;1
+71 72
+Or1;2
+U N
+Gsv;3
+U N
+Säv;4
+U N
+Sel;6
+U N
+P;9
+U N
+Jv;13
+U N
+J;14
+U N
+Apn;17
+U N
+Asd;19
+U N
+Lr;20
+U N
+Sn;24
+U N
+Fd;27
+U N
+Ndv;34
+U N
+Ns;35
+U N
+Vbd;38
+U N
+Bgs;40
+U N
+A;45
+U N
+Agg;56
+U N
+Vgå;66
+U N
+Hr;80
+U N
+Kä;91
+U N
+Fby;100
+U N
+F;114
+U N
+Fn;116
+U N
+Ss;128
+U N
+Rmtp;135
+U N
+Sk;144
+U N
+Vä;159
+U N
+Mh;171
+U N
+T;183
+U N
+Sle;191
+U N
+Äl;197
+U N
+Gdö;205
+U N
+Fa;214
+U N
+Lå;228
+U N
+Lln;237
+U N
+Vt;243
+U N
+Öj;250
+U N
+Täl;252
+U N
+Hrbg;255
+U N
+Hpbg;258
+U1 N1
+På;272
+U N
+Km;283
+U N
+Hgö;294
+U N
+Vr;303
+U N
+Bt;315
+U1 N1
+K;323
+U N
+Spn;331
+U N
+Sde;338
+U N
+Fle;346
+U N
+Skv;354
+U N
+Sp;361
+U N
+Nsj;364
+U N
+Sh;372
+U N
+B;382
+U N
+Koe;386
+U N
+Gn;392
+U N
+Mö;398
+U N
+Jn;409
+U N
+Soö;418
+U N
+Msj;426
+U N
+Bjn;438
+U1 N1
+Flb;440
+1 4
+Hu;442
+1 4
+Sta;444
+1 4
+Äs;447
+U1S N1S
+Åbe;450
+N2S N1S
+Sst;453
+U N
+Cst;455
 
 Fud;Sie,Fud,Kg
 Ali;Al,Ali,Lma
@@ -251,7 +463,77 @@ Lgd;gleis-wechsel-semi;Lgd,1 2,Khe,N;Khe,U,Lgd,1
 Mdn;block-diff;Am,N,Mdn,2;Mdn,1,Am,U
 Mdn;gleis-wechsel-far;Mdn,1,Am,U;Am,N,Mdn,1 2
 Mdn;block-diff;Krd,U,Mdn,1;Mdn,2,Krd,N
-Mdn;gleis-wechsel;Mdk,1 2,Krd,N;Krd,U,Mdn,1
+Mdn;gleis-wechsel;Mdn,1 2,Krd,N;Krd,U,Mdn,1
+Gsv;block-diff;Or1,U,Gsv,72;Gsv,87,Or1,N
+Gsv;gleis-wechsel;Gsv,87,Or1,N;Or1,U,Gsv,72 87
+Gsv;block-diff;Säv,N,Gsv,87;Gsv,72,Säv,U
+Gsv;gleis-wechsel;Gsv,87 72,Säv,U;Säv,N,Gsv,87
+Lr;block-diff;Asd,U,Lr,0 1 2;Lr,0 1,Asd,N
+Lr;gleis-wechsel;Lr,0 1,Asd,N;Asd,U,Lr,2 0 1
+Lr;block-diff;Sn,N,Lr,0 1;Lr,0 1 2,Sn,U
+Lr;gleis-wechsel;Lr,0 1 2,Sn,U;Sn,N,Lr,0 1
+Fd;block-diff;Ndv,N,Fd,2;Fd,1,Ndv,U
+Fd;gleis-wechsel-far;Fd,1,Ndv,U;Ndv,N,Fd,1 2
+Fd;block-diff;Sn,U,Fd,1;Fd,2,Sn,N
+Fd;gleis-wechsel;Fd,1 2,Sn,N;Sn,U,Fd,1
+A;block-diff;Bgs,U,A,3;A,2,Bgs,N
+A;gleis-wechsel;A,2 3,Bgs,N;Bgs,U,A,2 3
+Vgå;block-diff;Agg,U,Vgå,2;Vgå,1,Agg,N
+Vgå;gleis-wechsel;Vgå,1,Agg,N;Agg,U,Vgå,2 1
+Vgå;block-diff;Hr,N,Vgå,1;Vgå,2,Hr,U
+Vgå;gleis-wechsel;Vgå,1 2,Hr,U;Hr,N,Vgå,1
+Fby;block-diff;F,N,Fby,2;Fby,1,F,U
+Fby;gleis-wechsel-semi;Fby,1,F,U;F,N,Fby,1 2
+Fby;block-diff;Kä,U,Fby,1;Fby,2,Kä,N
+Fby;gleis-wechsel;Fby,1 2,Kä,N;Kä,U,Fby,1
+Ss;block-diff;F,N,Ss,2;Ss,1,F,U
+Ss;gleis-wechsel;Ss,1,F,U;F,N,Ss,1 2
+Ss;block-diff;Kä,U,Ss,1;Ss,2,Kä,N
+Ss;gleis-wechsel-far;Ss,1 2,Kä,N;Kä,U,Ss,1
+Rmtp;block-diff;Ss,U,Rmtp,2;Rmtp,3,Ss,N
+Rmtp;gleis-wechsel;Rmtp,3,Ss,N;Ss,U,Rmtp,2 3
+Rmtp;block-diff;Sk,N,Rmtp,3;Rmtp,2,Sk,U
+Rmtp;gleis-wechsel;Rmtp,3 2,Sk,U;Sk,N,Rmtp,3
+Sk;block-diff;Vä,N,Sk,2 3 4 5;Sk,3 4 5,Vä,U
+Sk;gleis-wechsel-far;Sk,3 4 5,Vä,U;Vä,N,Sk,2 3 4 5
+Sk;block-diff;Rmtp,U,Sk,3 4 5;Sk,2 3 4 5,Rmtp,N
+Sk;gleis-wechsel;Sk,2 3 4 5,Rmtp,N;Rmtp,U,Sk,3 4 5
+Vä;block-diff;Mh,N,Vä,3;Vä,2,Mh,U
+Vä;gleis-wechsel-semi;Vä,2,Mh,U;Mh,N,Vä,2 3
+Vä;block-diff;Sk,U,Vä,2;Vä,3,Sk,N
+Vä;gleis-wechsel;Vä,2 3,Sk,N;Sk,U,Vä,2
+T;block-diff;Mh,U,T,2;T,3,Mh,N
+T;gleis-wechsel-far;T,3,Mh,N;Mh,U,T,2 3
+T;block-diff;Sle,N,T,3;T,2,Sle,U
+T;gleis-wechsel;T,3 2,Sle,U;Sle,N,T,3
+Sle;block-diff;Äl,N,Sle,2;Sle,1,Äl,U
+Sle;gleis-wechsel;Sle,1,Äl,U;Äl,N,Sle,1 2
+Sle;block-diff;T,U,Sle,1;Sle,2,T,N
+Sle;gleis-wechsel;Sle,1 2,T,N;T,U,Sle,1
+Gdö;block-diff;Äl,U,Gdö,2 3 4;Gdö,3 4,Äl,N
+Gdö;gleis-wechsel;Gdö,3 4,Äl,N;Äl,U,Gdö,2 3 4
+Gdö;block-diff;Fa,N,Gdö,3 4;Gdö,2 3 4,Fa,U
+Gdö;gleis-wechsel;Gdö,2 3 4,Fa,U;Fa,N,Gdö,3 4
+Vr;block-diff;Bt,N,Vr,2;Vr,3,Bt,U
+Vr;gleis-wechsel;Vr,3,Bt,U;Bt,N,Vr,3 2
+Vr;block-diff;Hgö,U,Vr,3;Vr,2,Hgö,N
+Vr;gleis-wechsel;Vr,3 2,Hgö,N;Hgö,U,Vr,3
+K;gleis-wechsel;K,2,Spn,U;Spn,N,K,2
+K;gleis-wechsel;K,2,Bt,N1;Bt,U1,K,2
+K;gleis-wechsel;K,4,Bt,N1;Stö,U,K,3
+K;block-diff;Stö,U,K,3;K,4,Bt,N1
+Fle;block-diff;Sde,U,Fle,2 3 4;Fle,3 4,Sde,N
+Fle;gleis-wechsel-far;Fle,3 4,Sde,N;Sde,U,Fle,2 3 4
+Fle;block-diff;Skv,N,Fle,3 4;Fle,2 3 4,Skv,U
+Fle;gleis-wechsel;Fle,2 3 4,Skv,U;Skv,N,Fle,3 4
+Skv;block-diff;Sp,N,Skv,3;Skv,2,Sp,U
+Skv;gleis-wechsel;Skv,2,Sp,U;Sp,N,Skv,2 3
+Skv;block-diff;Fle,U,Skv,2;Skv,3,Fle,N
+Skv;gleis-wechsel;Skv,2 3,Fle,N;Fle,U,Skv,2
+Gn;block-diff;Mö,N,Gn,3;Gn,2 1,Mö,U
+Gn;gleis-wechsel;Gn,2 1,Mö,U;Mö,N,Gn,2 3
+Gn;block-diff;Koe,U,Gn,2;Gn,3,Koe,N
+Gn;gleis-wechsel;Gn,2 3,Koe,N;Koe,U,Gn,2
 
 Mgb;1 2 3 4 5 6 7 8 9 10 59
 59
@@ -468,3 +750,287 @@ E
 Lma 1
 E
 Al 59 63
+&
+G 1 2 3 4 5 6 7 8 9 10
+U
+Or 72
+72
+Or1 72
+U
+Gsv 72 87
+U
+Säv 2
+U
+Sel 2
+U
+P 2
+U
+Jv 1
+U
+J 2
+U
+Apn 1
+U
+Asd 1
+U
+Lr 0 1 2
+U
+Sn 1 2
+U
+Fd 3 1
+U
+Ndv 2
+U
+Ns 2
+U
+Vbd 2
+U
+Bgs 2
+U
+A 1 2
+U
+Agg 3 4
+U
+Vgå 1 2
+U
+Hr 5 6
+U
+Kä 1
+U
+Fby 3 1
+U
+F 3 4 5 6 7
+U
+Fn 33 34
+U
+Ss 3 1
+U
+Rmtp 2 3
+U
+Sk 1 3 4 5
+U
+Vä 4 2
+U
+Mh 1 2
+U
+T 2 3
+U
+Sle 1 3
+U
+Äl 2
+U
+Gdö 2 3 4
+U
+Fa 1
+U
+Lå 2 3 4 5
+U
+Lln 1
+U
+Vt 1
+U
+Öj 3
+U
+Täl 3
+U
+Hrbg 3 11 12 13 14 15 16 17 18
+U
+Hpbg 3 4 5 6
+U1
+På 1
+U
+Km 1
+U
+Hgö 2
+U
+Vr 1 3
+U
+Bt 1
+U1
+K 1 2
+U
+Spn 2
+U
+Sde 1
+U
+Fle 2 3 4
+U
+Skv 2 4
+U
+Sp 4
+U
+Nsj 1
+U
+Sh 2 3
+U
+B 2
+U
+Koe 3
+U
+Gn 4 2
+U
+Mö 2
+U
+Jn 3 4 5
+U
+Soö 5 6
+U
+Msj 2
+U
+Bjn 2
+U1
+Flb 3
+1
+Hu 1
+1
+Sta 1
+1
+Äs 2 10 11 12
+U1S
+Åbe 3
+N2S
+Sst 3
+U
+Cst 10 11 12 13 14 15 16 17 18 19
+&
+Cst 10 11 12 13 14 15 16 17 18 19
+N
+Sst 4
+N1S
+Åbe 4
+N1S
+Äs 5 10 11 12
+4
+Sta 4
+4
+Hu 4
+4
+Flb 6
+N1
+Bjn 1
+N
+Msj 1
+N
+Soö 7 8
+N
+Jn 1 2
+N
+Mö 1
+N
+Gn 2 3
+N
+Koe 1 2
+N
+B 1
+N
+Sh 1
+N
+Nsj 2
+N
+Sp 1 2 3
+N
+Skv 2 3
+N
+Fle 1 3 4
+N
+Sde 2
+N
+Spn 1
+N
+K 2 3 4
+N1
+Bt 2
+N
+Vr 2 3
+N
+Hgö 3
+N
+Km 2
+N
+På 2
+N1
+Hpbg 1 2
+N
+Hrbg 2 11 12 13 14 15 16 17 18
+N
+Täl 2
+N
+Öj 2
+N
+Vt 2
+N
+Lln 2
+N
+Lå 1 30
+N
+Fa 2
+N
+Gdö 1 3 4
+N
+Äl 3
+N
+Sle 1 2
+N
+T 1 3
+N
+Mh 3
+N
+Vä 2 3
+N
+Sk 2 3 4 5
+N
+Rmtp 1 3
+N
+Ss 1 2
+N
+Fn 31 32
+N
+F 1 2
+N
+Fby 2 1
+N
+Kä 2
+N
+Hr 3 4
+N
+Vgå 1 3
+N
+Agg 1 2
+N
+A 3 4
+N
+Bgs 1
+N
+Vbd 1
+N
+Ns 1
+N
+Ndv 1
+N
+Fd 2 1
+N
+Sn 3 4
+N
+Lr 0 1 3
+N
+Asd 2
+N
+Apn 2
+N
+J 1
+N
+Jv 2
+N
+P 1
+N
+Sel 1
+N
+Säv 1
+N
+Gsv 71 87
+N
+Or1 71
+71
+Or 71
+N
+G 1 2 3 4 5 6 7 8 9 10
