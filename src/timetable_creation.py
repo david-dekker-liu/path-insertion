@@ -29,6 +29,7 @@ def get_timetable(time_from, time_to, locations):
     df = df_input[df_input["orig"].isin(locations) | df_input["dest"].isin(locations)]
 
     df_running_specs = pd.read_csv("../data/t21_running_days.csv", sep=",")
+    df_running_specs = pd.read_csv("../data/redundant/t21_running_days OUD.csv", sep=",")
     df_running_specs["date_datetime"] = pd.to_datetime(df_running_specs['date'], format='%Y-%m-%d')
     df_running_specs = df_running_specs[(df_running_specs["date_datetime"] >= time_from_datetime_floored) & (df_running_specs["date_datetime"] <= time_to_datetime_ceiled)]
 
@@ -195,7 +196,6 @@ def remove_linjeplatser(t21, linjeplatser):
 
 def get_running_times(running_times_file, lineplatser, speed_profile):
     technical_running_times = pd.read_csv(running_times_file)
-
     running_time = {}
     for index, row in technical_running_times[technical_running_times["train_type"] == speed_profile].iterrows():
         running_time[(row["stn_id_from"], row["stn_id_to"], "r", "r")] = row["rt_forw_pp"]

@@ -48,7 +48,7 @@ to_dist_dict = {
 # def get_y():
 
 if __name__ == "__main__":
-    dark_mode = False
+    dark_mode = True
 
     output_file = "../out/timetable.svg"
     df = pd.read_csv("../data/filtered_t21.csv", sep=";")
@@ -105,7 +105,7 @@ if __name__ == "__main__":
             if last_trnr != 0 and dark_mode:
                 path_commands += [current_path_command + "' style='fill:none;stroke:white;stroke-width:1'/>"]
             elif last_trnr != 0:
-                path_commands += [current_path_command + "' style='fill:none;stroke:black;stroke-width:1'/>"]
+                path_commands += [current_path_command + "' style='fill:none;stroke:black;stroke-width:2.5'/>"]
             current_path_command = f"<path d='M {x1} {y1} L {x2} {y2}"
             last_x = x2
             last_trnr = trnr
@@ -113,11 +113,11 @@ if __name__ == "__main__":
     if dark_mode:
         path_commands += [current_path_command + "' style='fill:none;stroke:white;stroke-width:1'/>"]
     else:
-        path_commands += [current_path_command + "' style='fill:none;stroke:black;stroke-width:1'/>"]
+        path_commands += [current_path_command + "' style='fill:none;stroke:black;stroke-width:2.5'/>"]
 
     # df = pd.read_csv("../out/temp_obtained_paths.csv", sep=";")
     df = pd.read_csv("../out/candidate_paths.csv", sep=";")
-    df = df[(df["orig"].isin(to_dist_dict.keys())) & (df["dest"].isin(to_dist_dict.keys())) ]
+    df = df[(df["orig"].isin(to_dist_dict.keys())) & (df["dest"].isin(to_dist_dict.keys()))]
     df = df.sort_values(by=["train_ix", "time_start"])
 
     last_trnr = 0
@@ -154,7 +154,7 @@ if __name__ == "__main__":
             if last_trnr != 0 and dark_mode:
                 path_commands += [current_path_command + "' style='fill:none;stroke:#3282F6;stroke-width:2'/>"]
             elif last_trnr != 0:
-                path_commands += [current_path_command + "' style='fill:none;stroke:blue;stroke-width:2'/>"]
+                path_commands += [current_path_command + "' style='fill:none;stroke:blue;stroke-width:4'/>"]
             current_path_command = f"<path d='M {x1} {y1} L {x2} {y2}"
             last_x = x2
             last_trnr = trnr
@@ -162,14 +162,14 @@ if __name__ == "__main__":
     if dark_mode:
         path_commands += [current_path_command + "' style='fill:none;stroke:#3282F6;stroke-width:2'/>"]
     else:
-        path_commands += [current_path_command + "' style='fill:none;stroke:blue;stroke-width:2'/>"]
+        path_commands += [current_path_command + "' style='fill:none;stroke:blue;stroke-width:4'/>"]
 
     with open(output_file, "w+", encoding="utf-8") as f:
         f.write("<svg height='700' width='1743' xmlns='http://www.w3.org/2000/svg'>\n")
         if dark_mode:
             f.write("<rect width='100%' height='100%' fill='#0A1335'/>\n")
         else:
-            f.write("<rect width='100%' height='100%' fill='#FFFFFF'/>\n")
+            f.write("<rect width='100%' height='100%' fill='#CDDEFF'/>\n")
 
         for i in ["Gbm", "Bhs", "Alh", "Öx", "Fdf", "Brl", "Rås", "Bäf", "Ed"]:
             xs = round(x_offset,2)
@@ -193,8 +193,8 @@ if __name__ == "__main__":
             f.write(f"<rect width='{x_offset}' height='{ymax}' x='0' y='0' fill='#0A1335'/>\n")
             f.write(f"<rect width='{x_offset}' height='{ymax}' x='{xmax}' y='0' fill='#0A1335'/>\n")
         else:
-            f.write(f"<rect width='{x_offset}' height='{ymax}' x='0' y='0' fill='#FFFFFF'/>\n")
-            f.write(f"<rect width='{x_offset}' height='{ymax}' x='{xmax}' y='0' fill='#FFFFFF'/>\n")
+            f.write(f"<rect width='{x_offset}' height='{ymax}' x='0' y='0' fill='#CDDEFF'/>\n")
+            f.write(f"<rect width='{x_offset}' height='{ymax}' x='{xmax}' y='0' fill='#CDDEFF'/>\n")
 
         for i in ["Gsv", "Gbm", "Bhs", "Alh", "Öx", "Fdf", "Brl", "Rås", "Bäf", "Ed", "Ko"]:
             bonus_y = 0
@@ -220,12 +220,12 @@ if __name__ == "__main__":
             if dark_mode:
                 f.write(f"<text font-size='2.1em' text-anchor='middle' x='{x}' y='{y}' fill='white'>{hour}:00</text>\n")
             else:
-                f.write(f"<text font-size='2.1em' text-anchor='middle' x='{x}' y='{y}' fill='black'>{hour}:00</text>\n")
+                f.write(f"<text font-size='2.1em' text-anchor='middle' font-weight='bold' x='{x}' y='{y}' fill='black'>{hour}:00</text>\n")
 
         if dark_mode:
             f.write(f"<path d='M {x_offset} {y_offset} L {x_offset} {ymax} L {xmax} {ymax} L {xmax} {y_offset} L {x_offset} {y_offset}' style='fill:none;stroke:white;stroke-width:1'/>\n")
         else:
-            f.write(f"<path d='M {x_offset} {y_offset} L {x_offset} {ymax} L {xmax} {ymax} L {xmax} {y_offset} L {x_offset} {y_offset}' style='fill:none;stroke:black;stroke-width:1'/>\n")
+            f.write(f"<path d='M {x_offset} {y_offset} L {x_offset} {ymax} L {xmax} {ymax} L {xmax} {y_offset} L {x_offset} {y_offset}' style='fill:none;stroke:black;stroke-width:2'/>\n")
 
         f.write("</svg>\n")
     # print(df)

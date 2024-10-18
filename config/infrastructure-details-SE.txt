@@ -1,4 +1,4 @@
-Gsv;Göteborg Sävenäs;71 72 73
+Gsv;Göteborg Sävenäs;71 72 73 74
 Or1;Olskroken;72
 Or;Olskroken1;89
 Gbm;Göteborg Marieholm;1 2 3
@@ -25,7 +25,7 @@ Ed;Ed;1 2
 Ko;Kornsjö gränsen;1
 
 Gsv;0
-U N
+U
 Or1;1
 E
 Or;2
@@ -134,7 +134,7 @@ Gbm;gleis-wechsel;Gbm,2,Gas,N;Or,A,Gbm,2
 Gbm;block-diff;Or,A,Gbm,2 3;Gbm,1 2,Or,A
 Gbm;block-diff;Gas,U,Gbm,2 3;Gbm,1 2,Or,A
 
-Gsv;72
+Gsv;72 73 74
 U
 Or1;72
 &

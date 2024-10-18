@@ -204,7 +204,7 @@ class Infrastructure:
                         if (last_station, next_station, track) not in self.N_stations:
                             self.N_stations[(last_station, next_station, track)] = last_segment_tracks
                         else:
-                            self.N_stations[(last_station, next_station, track)] = list(set(self.N_stations[(last_station, track, next_station)] + last_segment_tracks))
+                            self.N_stations[(last_station, next_station, track)] = list(set(self.N_stations[(last_station, next_station, track)] + last_segment_tracks))
                     last_station = next_station
                     last_station_tracks = next_station_tracks
                     last_segment_tracks = ""
