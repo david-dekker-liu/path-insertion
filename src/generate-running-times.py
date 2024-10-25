@@ -1,7 +1,7 @@
 import pandas as pd
 
 if __name__ == "__main__":
-    train_routes = [["M", "Mgb", "MGB1", "Al", "Ali", "Lma", "Fl", "Sie", "Fud", "Kg", "Tp", "Sal", "Kd", "Bih", "Åp", "Ä", "Baa", "Vip", "För", "Bån", "Laov", "Ea", "Kst", "Hdr", "Hd", "Fur", "Btp", "Bp", "He", "Fab", "Teo", "Tye", "Haa", "Vb", "Vrö", "Få", "Åsa", "Lek", "Kb", "Khe", "Lgd", "Ag", "Ldo", "Krd", "Mdn", "Am", "Lis", "Gro", "G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö", "Fa", "Lå", "Lln", "Vt", "Öj", "Täl", "Hrbg", "Hpbg", "På", "Km", "Hgö", "Vr", "Bt", "K", "Spn", "Sde", "Fle", "Skv", "Sp", "Nsj", "Sh", "B", "Koe", "Gn", "Mö", "Jn", "Söö", "Msj", "Bjn", "Flb", "Hu", "Sta", "Äs", "Åbe", "Sst", "Cst"], ["Al", "Lma"], ["Sie", "Kg"]]
+    train_routes = [["M", "Mgb", "MGB1", "Al", "Ali", "Lma", "Fl", "Sie", "Fud", "Kg", "Tp", "Sal", "Kd", "Bih", "Åp", "Ä", "Baa", "Vip", "För", "Bån", "Laov", "Ea", "Kst", "Hdr", "Hd", "Fur", "Btp", "Bp", "He", "Fab", "Teo", "Tye", "Haa", "Vb", "Vrö", "Få", "Åsa", "Lek", "Kb", "Khe", "Lgd", "Ag", "Ldo", "Krd", "Mdn", "Am", "Lis", "Gro", "G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö", "Fa", "Lå", "Lln", "Vt", "Öj", "Täl", "Hrbg", "Hpbg", "På", "Km", "Hgö", "Vr", "Bt", "K", "Spn", "Sde", "Fle", "Skv", "Sp", "Nsj", "Sh", "B", "Koe", "Gn", "Mö", "Jn", "Söö", "Msj", "Bjn", "Flb", "Hu", "Sta", "Äs", "Åbe", "Sst", "Cst"]]
 
     all_profiles = {"GR401610", "GB201210", "GB201610", "GB201710", "GB201810", "GB202010", "GB221610", "GB401809", "GB402308", "GB930511", "GB931510", "GEG02310", "GR400910", "GR401410", "GR401509", "GR401510", "GR401610", "GR422210", "GR4E2608", "PB930516", "PR600616", "PR6A0414", "PX2-2000"}
 
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
                 with open("../data/generated_running_times.csv", "a", encoding="utf-8") as f:
                     f.write(
-                        f"{profile},{pair[0]},{pair[1]},{f_pp},{f_ps},{f_sp},{f_ss},{b_pp},{b_ps},{b_sp},{b_ss},{b_pp}\n")
+                        f"{profile},{pair[0]},{pair[1]},{f_pp},{f_ps},{f_sp},{f_ss},{b_pp},{b_ps},{b_sp},{b_ss}\n")
 
 
             # Now multiply the running times on ref0-ref1 by dist/refdist

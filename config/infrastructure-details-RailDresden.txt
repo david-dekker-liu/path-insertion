@@ -111,7 +111,7 @@ Bjn;Björnkulla;1 2
 Flb;Flemingsberg;3 6
 Hu;Huddinge;1 4
 Sta;Stuvsta;1 4
-Äs;Älvsjö;2 5 10
+Äs;Älvsjö;2 5 10 11 12
 Åbe;Årstaberg;3 4
 Sst;Stockholms Södra;3 4
 Cst;Stockholms Central;10 11 12 13 14 15 16 17 18 19

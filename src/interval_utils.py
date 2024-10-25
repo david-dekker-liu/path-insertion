@@ -4,7 +4,7 @@ from datetime import timedelta
 
 # Interpolate one time ... guess I did need it after all
 def interpolate_single_time(lint, new_time):
-    return lint.orig_start + ((new_time - lint.start).seconds / (lint.end - lint.start).seconds) * (lint.orig_end - lint.orig_start)
+    return lint.orig_start + ((new_time - lint.start).total_seconds() / (lint.end - lint.start).total_seconds()) * (lint.orig_end - lint.orig_start)
 
 
 # Linearly interpolate the start_range at the origin when the interval is shortened
@@ -105,6 +105,7 @@ def merge_intervals(lint_lists_to_merge):
                 max_lint_at_end = max_lint_at_start
             else:
                 # if max_lint_at_start.orig_start != max_lint_at_end.orig_start or max_lint_at_start.orig_end != max_lint_at_start.orig_end:
+                print("annoying merging case may go wrong")
                 print(active_aligned_intervals)
                 print(max_lint_at_start.orig_start, max_lint_at_end.orig_start)
                 print(max_lint_at_start.orig_end, max_lint_at_end.orig_end)
@@ -143,10 +144,10 @@ def merge_intervals(lint_lists_to_merge):
             last_end = lint.end
             last_orig_start = lint.orig_start
             last_orig_end = lint.orig_end
-            last_ratio = (lint.orig_end - lint.orig_start).seconds / (lint.end - lint.start).seconds
+            last_ratio = (lint.orig_end - lint.orig_start).total_seconds() / (lint.end - lint.start).total_seconds()
             continue
 
-        ratio = (lint.orig_end - lint.orig_start).seconds / (lint.end - lint.start).seconds
+        ratio = (lint.orig_end - lint.orig_start).total_seconds() / (lint.end - lint.start).total_seconds()
 
         # If two intervals should be merged, merge them by changing the last remembered interval
         if last_end == lint.start and last_orig_end == lint.orig_start and close(ratio, last_ratio):
@@ -159,7 +160,7 @@ def merge_intervals(lint_lists_to_merge):
             last_end = lint.end
             last_orig_start = lint.orig_start
             last_orig_end = lint.orig_end
-            last_ratio = (lint.orig_end - lint.orig_start).seconds / (lint.end - lint.start).seconds
+            last_ratio = (lint.orig_end - lint.orig_start).total_seconds() / (lint.end - lint.start).total_seconds()
 
     if len(output) > 0:
         combined_output += [LinkedInterval(last_start, last_end, last_orig_start, last_orig_end)]
@@ -329,6 +330,7 @@ def intersect_one_interval(interval, list_of_intervals):
         return Interval(max(test_interval.start, interval.start), min(test_interval.end, interval.end))
 
     return 0
+
 
 # Returns the complement of a list of intervals within a certain time window
 # WARNING: assumes the list of intervals is a sorted list without any overlap!
