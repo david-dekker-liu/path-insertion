@@ -259,7 +259,7 @@ def extend_parked_times(lint_list, free_spaces):
     for i in range(len(intersected_intervals)):
         lint = intersected_intervals[i]
 
-        while free_spaces[0].end <= lint.start:
+        while free_spaces[0].end < lint.start:
             free_spaces = free_spaces[1:]
 
         free_space = free_spaces[0]

@@ -120,12 +120,19 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
     # These are derived from the infra neighborhood dicts,
     # i.e., for each segment, get the tracks that it can use and the tracks where it can depart from
     # For the last station, there might be no departures, so all possible tracks are used there
+    print(infra.N_stations)
     relevant_station_tracks_keys = [key for key in infra.N_stations if (key[0], key[1]) in segments]
     relevant_station_tracks = {}
     for station in train_route:
         relevant_station_tracks[station] = [v[2] for v in relevant_station_tracks_keys if v[0] == station]
     # At some point decided that at arrival you can use all tracks, giving some issues in the path generation oops...
-    # relevant_station_tracks[train_route[-1]] = infra.stations[train_route[-1]].tracks
+    relevant_station_tracks[train_route[-1]] = infra.stations[train_route[-1]].tracks
+
+    # last_tracks = infra.segments[(train_route[-2], train_route[-1])].tracks
+    # if "U" in last_tracks:
+    #     relevant_station_tracks[train_route[-1]] = infra.N_segments[(train_route[-2], train_route[-1], "U")]
+    # else:
+    #     relevant_station_tracks[train_route[-1]] = infra.N_segments[(train_route[-2], train_route[-1], last_tracks[0])]
 
     # Similar for obtaining all possible segment tracks
     relevant_segment_tracks_keys = [key for key in infra.N_segments if (key[0], key[1]) in segments]
@@ -251,27 +258,33 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
                     entering_station_candidates_towards_runthrough[entering_track] += [leaving_segment_towards_runthrough]
 
         for entering_track in relevant_station_tracks[next_vertex]:
-            entering_station_candidates_towards_stop[entering_track] = intutils.merge_intervals(
-                entering_station_candidates_towards_stop[entering_track])
+            if entering_track in entering_station_candidates_towards_runthrough:
+                entering_station_candidates_towards_stop[entering_track] = intutils.merge_intervals(
+                    entering_station_candidates_towards_stop[entering_track])
 
-            entering_station_candidates_towards_runthrough[entering_track] = intutils.merge_intervals(
-                entering_station_candidates_towards_runthrough[entering_track])
+            if entering_track in entering_station_candidates_towards_runthrough:
+                entering_station_candidates_towards_runthrough[entering_track] = intutils.merge_intervals(
+                    entering_station_candidates_towards_runthrough[entering_track])
 
         station_parked_occupations_temp = {}
         station_runthrough_occupations_temp = {}
 
         for station_track in relevant_station_tracks[next_vertex]:
-            station_parked_occupations_temp[(next_vertex, station_track)] = intutils.extend_parked_times(entering_station_candidates_towards_stop[station_track], free_space_dict_stations[(next_vertex, station_track)])
+            if station_track in entering_station_candidates_towards_stop:
+                if current_vertex == "Rmtp":
+                    print(entering_station_candidates_towards_stop[station_track], free_space_dict_stations[(next_vertex, station_track)])
+                station_parked_occupations_temp[(next_vertex, station_track)] = intutils.extend_parked_times(entering_station_candidates_towards_stop[station_track], free_space_dict_stations[(next_vertex, station_track)])
 
-            interm = [lint for lint in station_parked_occupations_temp[(next_vertex, station_track)] if lint.start != lint.end]
+                interm = [lint for lint in station_parked_occupations_temp[(next_vertex, station_track)] if lint.start != lint.end]
 
-            station_parked_occupations[(next_vertex, station_track)] = intutils.merge_intervals([interm])
+                station_parked_occupations[(next_vertex, station_track)] = intutils.merge_intervals([interm])
 
-            station_runthrough_occupations_temp[(next_vertex, station_track)] = intutils.intersect_intervals(entering_station_candidates_towards_runthrough[station_track], free_space_dict_stations[(next_vertex, station_track)])
+            if station_track in entering_station_candidates_towards_runthrough:
+                station_runthrough_occupations_temp[(next_vertex, station_track)] = intutils.intersect_intervals(entering_station_candidates_towards_runthrough[station_track], free_space_dict_stations[(next_vertex, station_track)])
 
-            interm = [lint for lint in station_runthrough_occupations_temp[(next_vertex, station_track)] if lint.start != lint.end]
+                interm = [lint for lint in station_runthrough_occupations_temp[(next_vertex, station_track)] if lint.start != lint.end]
 
-            station_runthrough_occupations[(next_vertex, station_track)] = intutils.merge_intervals([interm])
+                station_runthrough_occupations[(next_vertex, station_track)] = intutils.merge_intervals([interm])
 
     end = time.time()
     last_vertex = train_route[-1]
@@ -560,8 +573,6 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
     #     the_file.write(f"{end-start}\n")
 
 
-
-
 if __name__ == '__main__':
     # m_infra = Infrastructure("../config/infrastructure-details-SE.txt", "../config/conflict_margins.txt")
     m_infra = Infrastructure("../config/infrastructure-details-RailDresden.txt", "../config/conflict_margins.txt")
@@ -584,8 +595,10 @@ if __name__ == '__main__':
     # m_train_route = ["Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
     # m_train_route = ["Gbm", "Agb", "Sue", "Bhs", "Nöe", "Nol", "Än", "Alh", "Les", "Tbn", "Vpm", "Veas", "Thn", "Öx", "Bjh", "Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
     # m_train_route = ["Gsv", "Or1", "Or", "Gbm", "Agb", "Sue", "Bhs", "Nöe", "Nol", "Än", "Alh", "Les", "Tbn", "Vpm", "Veas", "Thn", "Öx", "Bjh", "Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
-    m_train_route = ["G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö"]
+    # m_train_route = ["G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö"]
     # m_train_route = ["G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö", "Fa", "Lå", "Lln", "Vt", "Öj", "Täl", "Hrbg", "Hpbg", "På", "Km", "Hgö", "Vr", "Bt", "K", "Spn", "Sde", "Fle", "Skv", "Sp", "Nsj", "Sh", "B", "Koe", "Gn", "Mö", "Jn", "Söö", "Msj", "Bjn", "Flb", "Hu", "Sta", "Äs", "Åbe", "Sst", "Cst"]
+    m_train_route = ["Ä", "Baa", "Vip", "För", "Bån", "Laov", "Ea", "Kst", "Hdr", "Hd", "Fur", "Btp", "Bp", "He", "Fab", "Teo", "Tye", "Haa", "Vb", "Vrö", "Få", "Åsa", "Lek", "Kb", "Khe", "Lgd", "Ag", "Ldo", "Krd", "Mdn", "Am", "Lis", "Gro", "G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö", "Fa", "Lå", "Lln", "Vt", "Öj", "Täl", "Hrbg", "Hpbg", "På", "Km", "Hgö", "Vr", "Bt", "K", "Spn", "Sde", "Fle", "Skv", "Sp", "Nsj", "Sh", "B", "Koe", "Gn", "Mö", "Jn", "Söö", "Msj", "Bjn", "Flb", "Hu", "Sta", "Äs", "Åbe", "Sst", "Cst"]
+    m_train_route = list(reversed(m_train_route))
 
     m_t21 = timetable_creation.get_timetable(m_TIME_FROM, m_TIME_TO, m_train_route)
     m_t21 = timetable_creation.remove_linjeplatser(m_t21, ["Drt", "Mon"])

@@ -34,7 +34,7 @@ Vrö;Värö;1 2 3
 Få;Frillesås;2 3
 Åsa;Åsa;1 2
 Lek;Lekarekulle;1 2 3
-Kb;Kungsbacka;2 3
+Kb;Kungsbacka;1 2 3
 Khe;Kungsbacka Hede;1 2
 Lgd;Ledsgård;1 2 3
 Ag;Anneberg;1 2
@@ -80,7 +80,7 @@ Sle;Slätte;1 2 3
 Äl;Älgerås;2 3
 Gdö;Gårdsjö;1 2 3 4
 Fa;Finnerödja;1 2
-Lå;Laxå;1 2 3 4 5
+Lå;Laxå;1 2 3 4 5 30
 Lln;Linddalen;1 2
 Vt;Vretstorp;1 2
 Öj;Östansjö;2 3
@@ -696,7 +696,11 @@ U
 Lis;85
 85
 Gro;85
+85
+G;1 2 3 4 5 6 7 8 9 10
 &
+G;1 2 3 4 5 6 7 8 9 10
+86
 Gro;86
 86
 Lis;86

@@ -7,12 +7,15 @@ from datetime import timedelta
 
 if __name__ == "__main__":
     dark_mode = True
-    train_route = ["G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö", "Fa", "Lå", "Lln", "Vt", "Öj", "Täl", "Hrbg", "Hpbg", "På", "Km", "Hgö", "Vr", "Bt", "K", "Spn", "Sde", "Fle", "Skv", "Sp", "Nsj", "Sh", "B", "Koe", "Gn", "Mö", "Jn", "Söö", "Msj", "Bjn", "Flb", "Hu", "Sta", "Äs", "Åbe", "Sst", "Cst"]
+    train_route = ["Ä", "Baa", "Vip", "För", "Bån", "Laov", "Ea", "Kst", "Hdr", "Hd", "Fur", "Btp", "Bp", "He", "Fab", "Teo", "Tye", "Haa", "Vb", "Vrö", "Få", "Åsa", "Lek", "Kb", "Khe", "Lgd", "Ag", "Ldo", "Krd", "Mdn", "Am", "Lis", "Gro", "G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö", "Fa", "Lå", "Lln", "Vt", "Öj", "Täl", "Hrbg", "Hpbg", "På", "Km", "Hgö", "Vr", "Bt", "K", "Spn", "Sde", "Fle", "Skv", "Sp", "Nsj", "Sh", "B", "Koe", "Gn", "Mö", "Jn", "Söö", "Msj", "Bjn", "Flb", "Hu", "Sta", "Äs", "Åbe", "Sst", "Cst"]
+    # train_route = ["G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö", "Fa", "Lå", "Lln", "Vt", "Öj", "Täl", "Hrbg", "Hpbg", "På", "Km", "Hgö", "Vr", "Bt", "K", "Spn", "Sde", "Fle", "Skv", "Sp", "Nsj", "Sh", "B", "Koe", "Gn", "Mö", "Jn", "Söö", "Msj", "Bjn", "Flb", "Hu", "Sta", "Äs", "Åbe", "Sst", "Cst"]
+
+    train_route = list(reversed(train_route))
     adj_pairs = [(train_route[i], train_route[i+1]) for i in range(len(train_route) - 1)]
 
     locations_to_label = ["F", "Sk", "Hrbg", "K", "A", "Hr", "Söö", "Gdö"]
-    TIME_FROM = "2021-03-13 22:00"
-    TIME_TO = "2021-03-15 08:00"
+    TIME_FROM = "2021-03-14 00:00"
+    TIME_TO = "2021-03-15 06:00"
     TIME_FROM_DATETIME = datetime.strptime(TIME_FROM, "%Y-%m-%d %H:%M")
     TIME_TO_DATETIME = datetime.strptime(TIME_TO, "%Y-%m-%d %H:%M")
     time_window = (TIME_TO_DATETIME - TIME_FROM_DATETIME).total_seconds()
@@ -33,7 +36,8 @@ if __name__ == "__main__":
 
     output_file = "../out/timetable.svg"
     df = pd.read_csv("../data/filtered_t21.csv", sep=";")
-    df = df[(df["orig"].isin(to_dist_dict.keys())) & (df["dest"].isin(to_dist_dict.keys())) & df["track_id"].isin(["U", "E", "A", "U1", "U1S", "N2S", "1"])]
+    # df = df[(df["orig"].isin(to_dist_dict.keys())) & (df["dest"].isin(to_dist_dict.keys())) & df["track_id"].isin(["U", "E", "A", "U1", "U1S", "N2S", "1"])]
+    df = df[(df["orig"].isin(to_dist_dict.keys())) & (df["dest"].isin(to_dist_dict.keys())) & df["track_id"].isin(["N", "E", "A", "N1", "N1S", "4"])]
 
     df = df.sort_values(['train_id', 'time_start_corrected'], ascending=[True, True])
 
