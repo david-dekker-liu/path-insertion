@@ -124,7 +124,8 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
     relevant_station_tracks = {}
     for station in train_route:
         relevant_station_tracks[station] = [v[2] for v in relevant_station_tracks_keys if v[0] == station]
-    relevant_station_tracks[train_route[-1]] = infra.stations[train_route[-1]].tracks
+    # At some point decided that at arrival you can use all tracks, giving some issues in the path generation oops...
+    # relevant_station_tracks[train_route[-1]] = infra.stations[train_route[-1]].tracks
 
     # Similar for obtaining all possible segment tracks
     relevant_segment_tracks_keys = [key for key in infra.N_segments if (key[0], key[1]) in segments]
@@ -162,6 +163,7 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
         # Identify segment
         current_vertex = train_route[count]
         next_vertex = train_route[count+1]
+        print(current_vertex, next_vertex)
 
         # print("Current vertex", current_vertex, "with tracks", get_station_track_list(t21, current_vertex))
 
@@ -582,8 +584,8 @@ if __name__ == '__main__':
     # m_train_route = ["Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
     # m_train_route = ["Gbm", "Agb", "Sue", "Bhs", "Nöe", "Nol", "Än", "Alh", "Les", "Tbn", "Vpm", "Veas", "Thn", "Öx", "Bjh", "Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
     # m_train_route = ["Gsv", "Or1", "Or", "Gbm", "Agb", "Sue", "Bhs", "Nöe", "Nol", "Än", "Alh", "Les", "Tbn", "Vpm", "Veas", "Thn", "Öx", "Bjh", "Fdf", "Brl", "Skbl", "Rås", "Bäf", "Ed", "Ko"]
-    # m_train_route = ["G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö", "Fa", "Lå", "Lln", "Vt", "Öj", "Täl", "Hrbg"]
-    m_train_route = ["G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö", "Fa", "Lå", "Lln", "Vt", "Öj", "Täl", "Hrbg", "Hpbg", "På", "Km", "Hgö", "Vr", "Bt", "K", "Spn", "Sde", "Fle", "Skv", "Sp", "Nsj", "Sh", "B", "Koe", "Gn", "Mö", "Jn", "Söö", "Msj", "Bjn", "Flb", "Hu", "Sta", "Äs", "Åbe", "Sst", "Cst"]
+    m_train_route = ["G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö"]
+    # m_train_route = ["G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö", "Fa", "Lå", "Lln", "Vt", "Öj", "Täl", "Hrbg", "Hpbg", "På", "Km", "Hgö", "Vr", "Bt", "K", "Spn", "Sde", "Fle", "Skv", "Sp", "Nsj", "Sh", "B", "Koe", "Gn", "Mö", "Jn", "Söö", "Msj", "Bjn", "Flb", "Hu", "Sta", "Äs", "Åbe", "Sst", "Cst"]
 
     m_t21 = timetable_creation.get_timetable(m_TIME_FROM, m_TIME_TO, m_train_route)
     m_t21 = timetable_creation.remove_linjeplatser(m_t21, ["Drt", "Mon"])
