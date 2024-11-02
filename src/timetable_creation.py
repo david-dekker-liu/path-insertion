@@ -7,7 +7,7 @@ import src.headway_functions as headway_functions
 import src.path_insertion as path_insertion
 
 
-def get_timetable(time_from, time_to, locations):
+def get_timetable(time_from, time_to, locations, source_file="../data/t21.csv"):
     # The database contains two types of records:
     # * Arrival/Departure at trafikplats
     # * Entrance/Leaving at a segment between two adjacent trafikplatser
@@ -25,10 +25,10 @@ def get_timetable(time_from, time_to, locations):
     time_to_datetime_plus10 = time_to_datetime + timedelta(minutes=10)
 
     # Read timetable databases, select possibly relevant days and join them
-    df_input = pd.read_csv("../data/t21.csv", sep=",")
+    df_input = pd.read_csv(source_file, sep=",")
     df = df_input[df_input["orig"].isin(locations) | df_input["dest"].isin(locations)]
 
-    df_running_specs = pd.read_csv("../data/t21_running_days.csv", sep=",")
+    df_running_specs = pd.read_csv("../data/t21_running_days_temp.csv", sep=",")
     # df_running_specs = pd.read_csv("../data/redundant/t21_running_days OUD.csv", sep=",")
     df_running_specs["date_datetime"] = pd.to_datetime(df_running_specs['date'], format='%Y-%m-%d')
     df_running_specs = df_running_specs[(df_running_specs["date_datetime"] >= time_from_datetime_floored) & (df_running_specs["date_datetime"] <= time_to_datetime_ceiled)]

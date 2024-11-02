@@ -1,3 +1,4 @@
+import shutil
 import time
 
 import numpy as np
@@ -15,6 +16,22 @@ from src.infrastructure import Infrastructure, Station, Segment
 # TODO Test first if it is a predefined exception,
 # TODO i.e., single-track line with smaller blocks.
 
+
+def obj(t1, t2, req1, req2):
+    result = 0
+    alpha2 = 0.00000003
+    alpha3 = 0.00000003
+    alpha1 = 1 - alpha2 - alpha3
+
+    if t1 < req1:
+        result += alpha2 * ((req1 - t1).total_seconds()) * ((req1 - t1).total_seconds())
+
+    if t2 > req2:
+        result += alpha3 * ((t2 - req2).total_seconds()) * ((t2 - req2).total_seconds())
+
+    result += alpha1 * (t2 - t1).total_seconds() / (req2 - req1).total_seconds()
+
+    return result
 
 def get_segment_type_from_row(row):
     return get_segment_type_from_values(row["dest"], row["track_id"])
@@ -113,8 +130,9 @@ def get_station_track_list(df, loc):
     return expected_result
 
 
-def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time, t21, TIME_FROM_DATETIME, TIME_TO_DATETIME, train_route, output_file, filter_close_paths):
+def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time, t21, TIME_FROM_DATETIME, TIME_TO_DATETIME, train_route, output_file, filter_close_paths, free_space_dict_stations, free_space_dict_segments, free_space_dict_transitions, log_file="../out/log.csv", req_dep=0, req_arr=0, add_to_t21=False):
     segments = [(train_route[i], train_route[i+1]) for i in range(len(train_route) - 1)]
+    alg_start = time.time()
 
     # Get all station tracks for which we need precomputations
     # These are derived from the infra neighborhood dicts,
@@ -290,6 +308,10 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
     last_vertex = train_route[-1]
     options = []
 
+    alg_finish = time.time()
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(f"{train_to_insert};algorithm;{alg_finish - alg_start}\n")
+
     #########################
     ### PATH BACKTRACKING ###
     #########################
@@ -358,7 +380,25 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
         filtered_filtered_options += [(w,x,y,z,count)]
         count += 1
 
-    next_options = filtered_filtered_options
+    # Filter out too expensive paths
+    # for k in filtered_filtered_options:
+    #     print(k[2], k[1], req_dep, req_arr, obj(k[2], k[1], req_dep, req_arr))
+    # print(filtered_filtered_options)
+    next_options = [v for v in filtered_filtered_options if obj(v[2], v[1], req_dep, req_arr) <= 5.5]
+
+    if add_to_t21:
+        best_option = next_options[0]
+
+        for v in next_options:
+            if obj(v[2], v[1], req_dep, req_arr) < obj(best_option[2], best_option[1], req_dep, req_arr):
+                best_option = v
+
+        next_options = [best_option]
+        target_time = best_option[2]
+
+    # print("next")
+    # for k in next_options:
+    #     print(k[2], k[1], req_dep, req_arr, obj(k[2], k[1], req_dep, req_arr))
 
     ###########################
     ### ACTUAL BACKTRACKING ###
@@ -371,6 +411,17 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
         for opt in next_options:
             f.write(f"{train_to_insert}999{opt[4]};{train_to_insert};{opt[4]};{train_route[-1]};;{opt[0]};{datetime.strftime(opt[1], '%Y-%m-%d %H:%M:%S')};;{datetime.strftime(opt[1], '%Y-%m-%d')}\n")
             last_time[opt[4]] = opt[1]
+    if add_to_t21:
+        with open("C:/Users/davde78/Documents/sos-project/out/log_incr_insertion.csv", 'a+', encoding='utf-8') as f:
+            f.write(f"{train_to_insert}999{opt[4]};{train_to_insert};{obj(best_option[2], best_option[1], req_dep, req_arr)}\n")
+        with open("C:/Users/davde78/Documents/sos-project/data/t21_temp.csv", 'a', encoding='utf-8') as f:
+            for opt in next_options:
+                f.write(
+                    f"0,{train_to_insert}999{opt[4]},{train_to_insert},{opt[4]},0,{train_route[-1]},,{get_time(opt[1], target_time)},,0,{opt[0]},0\n")
+                last_time[opt[4]] = opt[1]
+        with open("C:/Users/davde78/Documents/sos-project/data/t21_running_days_temp.csv", 'a', encoding='utf-8') as f:
+            f.write(f"{train_to_insert}999{opt[4]},{target_time.strftime('%Y-%m-%d')}\n")
+
 
     for trafikplats in reversed(train_route[:-1]):
         updated_options = []
@@ -528,7 +579,9 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
                 else:
                     arr = best_time_arr
                     dep = best_time
-                last_time[train_id] = arr
+
+                if not add_to_t21:
+                    last_time[train_id] = arr
 
                 f.write(
                     f"{train_to_insert}999{train_id};"
@@ -541,6 +594,45 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
                     f"{datetime.strftime(dep, '%Y-%m-%d %H:%M:%S')};"
                     f"{datetime.strftime(arr, '%Y-%m-%d')}\n")
 
+            if add_to_t21:
+                with open("C:/Users/davde78/Documents/sos-project/data/t21_temp.csv", 'a', encoding='utf-8') as f:
+                    f.write(
+                        f"0,{train_to_insert}999{train_id},"
+                        f"{train_to_insert},"
+                        f"{train_id},0,"
+                        f"{trafikplats},"
+                        f"{last_vertex},"
+                        f"{get_time(best_time, target_time)},"
+                        f"{get_time(last_time[train_id], target_time)},0,"
+                        f"{best_segment_track},0\n")
+
+                    if trafikplats == train_route[-1]:
+                        arr = best_time
+                        dep = ""
+                    elif best_time_arr == 0:
+                        arr = best_time
+                        dep = best_time
+                    else:
+                        arr = best_time_arr
+                        dep = best_time
+                    last_time[train_id] = arr
+
+                    f.write(
+                        f"0,{train_to_insert}999{train_id},"
+                        f"{train_to_insert},"
+                        f"{train_id},0,"
+                        f"{trafikplats},"
+                        f","
+                        f"{get_time(arr, target_time)},"
+                        f"{get_time(dep, target_time)},0,"
+                        f"{best_segment_track},0\n")
+
+
+            """
+            ordinal,train_ix,train_id,variant,stn_ix,orig,dest,time_start,time_end,activity,track_id,stop_is_possible
+            19,11965,6222,1,467,Hyl,,09:53:00,09:56:00,,3,f
+            """
+
             if best_time_arr == 0:
                 updated_options += [(best_arrival_track, best_time, start_time, "r", train_id)]
             else:
@@ -550,6 +642,11 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
         next_options = updated_options
 
     prev_vertex = 0
+
+    total_finish = time.time()
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(f"{train_to_insert};backtracking;{total_finish - alg_finish}\n")
+
 
     for (current_vertex, station_track) in station_parked_occupations.keys():
         if prev_vertex != 0 and prev_vertex != current_vertex:
@@ -573,7 +670,153 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
     #     the_file.write(f"{end-start}\n")
 
 
+def get_time(t1, target_time):
+    if target_time.strftime('%Y-%m-%d') != t1.strftime('%Y-%m-%d'):
+        hours = str(int(t1.strftime('%H')) + 24)
+        return hours + t1.strftime(':%H:%S')
+    else:
+        return t1.strftime('%H:%M:%S')
+
+def generate_many_paths():
+    infra = Infrastructure("../config/infrastructure-details-RailDresden.txt", "../config/conflict_margins.txt")
+    fullstart = time.time()
+    running_time_source = "../data/generated_running_times.csv"
+
+    TIME_FROM = "2021-03-13 23:00"
+    TIME_TO = "2021-03-15 07:00"
+    TIME_FROM_DATETIME = datetime.strptime(TIME_FROM, "%Y-%m-%d %H:%M")
+    TIME_TO_DATETIME = datetime.strptime(TIME_TO, "%Y-%m-%d %H:%M")
+
+    # Other settings
+    filter_close_paths = False
+
+    AG = ["Ä", "Baa", "Vip", "För", "Bån", "Laov", "Ea", "Kst", "Hdr", "Hd", "Fur", "Btp", "Bp", "He", "Fab", "Teo", "Tye", "Haa", "Vb", "Vrö", "Få", "Åsa", "Lek", "Kb", "Khe", "Lgd", "Ag", "Ldo", "Krd", "Mdn", "Am", "Lis", "Gro", "G"]
+    AF = AG + ["Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F"]
+    AHrbg = AF + ["Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö", "Fa", "Lå", "Lln", "Vt", "Öj", "Täl", "Hrbg"]
+    AK = AHrbg + ["Hpbg", "På", "Km", "Hgö", "Vr", "Bt", "K"]
+    AFle = AK + ["Spn", "Sde", "Fle"]
+    AAs = AFle + ["Skv", "Sp", "Nsj", "Sh", "B", "Koe", "Gn", "Mö", "Jn", "Söö", "Msj", "Bjn", "Flb", "Hu", "Sta", "Äs"]
+    ACst = AAs + ["Åbe", "Sst", "Cst"]
+
+    # length = 0
+    # for i in range(len(ACst) - 1):
+    #     length += infra.segments[(ACst[i], ACst[i+1])].length
+    # print(length)
+    # raise Exception
+
+    HrbgA = list(reversed(AHrbg))
+    KA = list(reversed(AK))
+    CstA = list(reversed(ACst))
+    FA = list(reversed(AF))
+
+    route_dict = {"AG": AG, "AF": AF, "AHrbg": AHrbg, "AK": AK, "AFle": AFle, "AAs": AAs, "ACst": ACst, "HrbgA": HrbgA, "KA": KA, "CstA": CstA, "FA": FA}
+
+    train_dict = {("GB201210", "AFle"): [44100, 44150], ("GB201210", "AHrbg"): [44980], ("GB201610", "ACst"): [41406], ("GB201610", "AG"): [46250], ("GB201610", "HrbgA"): [44723, 44725], ("GB201710", "AK"): [44906], ("GB201710", "KA"): [44905], ("GB201810", "AAs"): [49340], ("GB202010", "AHrbg"): [44990], ("GB221610", "HrbgA"): [44721], ("GB221610", "CstA"): [41755], ("GB401809", "AHrbg"): [40970, 40972], ("GB402308", "HrbgA"): [40971, 40973], ("GB931510", "AHrbg"): [44420], ("GEG02310", "AHrbg"): [44728, 44734, 44736], ("GR401410", "AHrbg"): [44200], ("GR401410", "ACst"): [9400], ("GR401410", "FA"): [4903], ("GR401509", "AHrbg"): [5166], ("GR401509", "AF"): [5134], ("GR401510", "ACst"): [4140], ("GR401610", "AHrbg"): [4300, 4168, 4190, 4194], ("GR401610", "AAs"): [4240], ("GR401610", "HrbgA"): [5711, 4191, 5611, 5617], ("GR422210", "HrbgA"): [4325], ("GR4E2608", "HrbgA"): [45513], ("PB930516", "HrbgA"): [3911], ("PB930516", "CstA"): [3943], ("PR600616", "CstA"): [9847], ("PR6A0414", "CstA"): [1, 345], ("PR6A0414", "ACst"): [2], ("PX2-2000", "CstA"): [507, 511, 545], ("PX2-2000", "ACst"): [502, 504, 548]}
+
+    passenger_trains = [1, 3911, 502, 507, 511, 504, 345, 3943, 548, 545, 2, 9847]
+    ordering = [1, 3911, 502, 507, 511, 504, 345, 3943, 548, 545, 2] + [44990, 44725, 4190, 40970, 4903, 40973, 44734, 4194, 41755, 44736, 5617, 5166, 5134, 45513, 4300, 5611, 40972, 4191, 40971, 4168, 46250, 5711, 49340, 44150, 9847, 44200, 9400, 41406, 4240, 44721, 44905, 44420, 44723, 44728, 44100, 4140, 4325, 44980, 44906]
+    # bad_ordering = [44990, 44725, 4190, 40970, 4903, 40973, 44734, 4194, 41755, 44736, 5617, 5166, 5134, 45513, 4300, 5611, 40972, 4191, 40971, 4168, 46250, 5711, 49340, 44150, 9847, 44200, 9400, 41406, 4240, 44721, 44905, 44420, 44723, 44728, 44100, 4140, 4325, 44980, 44906] + [1, 3911, 502, 507, 511, 504, 345, 3943, 548, 545, 2]
+    # ordering = bad_ordering
+
+    shutil.copyfile("C:/Users/davde78/Documents/sos-project/data/t21.csv",
+                    "C:/Users/davde78/Documents/sos-project/data/t21_temp.csv")
+    shutil.copyfile("C:/Users/davde78/Documents/sos-project/data/t21_running_days.csv",
+                    "C:/Users/davde78/Documents/sos-project/data/t21_running_days_temp.csv")
+
+    # passenger_added = pd.read_csv("../out/indep-set-results-first-half-9847.csv", sep=";", encoding="utf-8")
+    # for index, row in passenger_added.iterrows():
+    #     id = row["id"]
+    #     trnr = int(row["trnr"])
+    #
+    #     trnr_df = pd.read_csv(f"../data/candidate paths indep set/candidate_paths_{trnr}.csv", sep=";", encoding="utf-8")
+    #     trnr_df = trnr_df[trnr_df["train_ix"] == id]
+    #     target_time = datetime.strptime(trnr_df.iloc[-1]["time_start"], "%Y-%m-%d %H:%M:%S")
+    #
+    #     with open("C:/Users/davde78/Documents/sos-project/data/t21_running_days_temp.csv", "a", encoding="utf-8") as f:
+    #         f.write(
+    #             f"{id},{target_time.strftime('%Y-%m-%d')}\n")
+    #
+    #     for index, row in trnr_df.iterrows():
+    #         with open("C:/Users/davde78/Documents/sos-project/data/t21_temp.csv", "a",
+    #          encoding="utf-8") as f:
+    #             if pd.isna(row["time_end"]):
+    #                 f.write(f"0,{row['train_ix']},{row['train_id']},{row['variant']},0,{row['orig']},{row['dest']},{get_time(datetime.strptime(row['time_start'], '%Y-%m-%d %H:%M:%S'), target_time)},,0,{row['track_id']},0\n")
+    #             else:
+    #                 f.write(
+    #                     f"0,{row['train_ix']},{row['train_id']},{row['variant']},0,{row['orig']},{row['dest']},{get_time(datetime.strptime(row['time_start'], '%Y-%m-%d %H:%M:%S'), target_time)},{get_time(datetime.strptime(row['time_end'], '%Y-%m-%d %H:%M:%S'), target_time)},0,{row['track_id']},0\n")
+    requested_times = pd.read_csv("../data/requested_departure_arrival.csv", sep=";", encoding="utf-8")
+    log_file = "../out/log.csv"
+    # with open(log_file, "w+", encoding="utf-8") as f:
+    #     f.write("New iteration loop;;;\n")
+
+    # for trnr in ordering:
+    #     for speed_profile, route in train_dict.keys():
+    #         if trnr not in train_dict[(speed_profile, route)]:
+    #             continue
+
+    for speed_profile, route in train_dict.keys():
+        for trnr in train_dict[(speed_profile, route)]:
+            # if trnr in passenger_trains:
+            #     continue
+
+            for index, row in requested_times.iterrows():
+                if row["trnr"] != trnr:
+                    continue
+                else:
+                    req_departure = datetime.strptime(row["dep"], "%Y-%m-%d %H:%M:%S")
+                    req_arrival = datetime.strptime(row["arr"], "%Y-%m-%d %H:%M:%S")
+                    TIME_FROM_DATETIME = req_departure - timedelta(minutes=210)
+                    TIME_TO_DATETIME = req_arrival + timedelta(minutes=210)
+                    break
+
+            print(trnr, req_departure, req_arrival)
+
+            output_file = f"../out/candidate_paths_only_freight_{trnr}.csv"
+            start_time = time.time()
+
+            train_route = route_dict[route]
+            # train_to_insert = train_dict[(speed_profile, route)][0]
+
+            source_file = "C:/Users/davde78/Documents/sos-project/data/t21_temp.csv"
+            t21 = timetable_creation.get_timetable(TIME_FROM, TIME_TO, train_route, source_file)
+            t21 = timetable_creation.remove_linjeplatser(t21, ["Drt", "Mon"])
+            t21.to_csv("../data/filtered_t21.csv", sep=";")
+
+            print("time until timetable reading complete", time.time() - start_time)
+
+            running_time = timetable_creation.get_running_times(running_time_source, infra.linjeplatser, speed_profile)
+            segments = [(train_route[i], train_route[i + 1]) for i in range(len(train_route) - 1)]
+
+            print("time until running time reading complete", time.time() - start_time)
+
+            print(infra.stations)
+            free_space_dict_stations = free_space_detection.get_free_spaces_stations(t21, trnr, TIME_FROM_DATETIME, TIME_TO_DATETIME, infra.stations)
+            # print(free_space_dict_stations)
+            print("time until station free spaces complete", time.time() - start_time)
+            free_space_dict_transitions = free_space_detection.get_free_spaces_transitions(t21, trnr, TIME_FROM_DATETIME, TIME_TO_DATETIME, infra.transitions)
+            # print(free_space_dict_transitions)
+            print("time until transition free spaces complete", time.time() - start_time)
+            free_space_dict_segments = free_space_detection.get_free_spaces_segments(t21, trnr, TIME_FROM_DATETIME, TIME_TO_DATETIME, segments, infra)
+            # print(free_space_dict_segments)
+            print("time until segment free spaces complete", time.time() - start_time)
+
+            end_of_prep = time.time()
+
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(f"{trnr};precomputations;{end_of_prep - start_time}\n")
+
+            print("Preparation time", end_of_prep - start_time)
+
+            generate_candidate_paths(infra, trnr, speed_profile, running_time, t21, TIME_FROM_DATETIME, TIME_TO_DATETIME, train_route, output_file, filter_close_paths, free_space_dict_stations, free_space_dict_segments, free_space_dict_transitions, log_file, req_departure, req_arrival, True)
+            end_of_alg = time.time()
+            print("Running time", end_of_alg - end_of_prep)
+
+
 if __name__ == '__main__':
+    generate_many_paths()
+    raise Exception
+
+    """
     # m_infra = Infrastructure("../config/infrastructure-details-SE.txt", "../config/conflict_margins.txt")
     m_infra = Infrastructure("../config/infrastructure-details-RailDresden.txt", "../config/conflict_margins.txt")
     fullstart = time.time()
@@ -581,8 +824,8 @@ if __name__ == '__main__':
     # running_time_source = "../data/t21_technical_running_times.csv"
 
     # Time frame to be considered
-    m_TIME_FROM = "2021-03-14 00:00"
-    m_TIME_TO = "2021-03-15 06:00"
+    m_TIME_FROM = "2021-03-13 23:00"
+    m_TIME_TO = "2021-03-15 07:00"
     m_TIME_FROM_DATETIME = datetime.strptime(m_TIME_FROM, "%Y-%m-%d %H:%M")
     m_TIME_TO_DATETIME = datetime.strptime(m_TIME_TO, "%Y-%m-%d %H:%M")
 
@@ -630,3 +873,4 @@ if __name__ == '__main__':
     generate_candidate_paths(m_infra, m_train_to_insert, m_speed_profile, m_running_time, m_t21, m_TIME_FROM_DATETIME, m_TIME_TO_DATETIME, m_train_route, m_output_file, m_filter_close_paths)
     end_of_alg = time.time()
     print("Running time", end_of_alg - end_of_prep)
+    """
