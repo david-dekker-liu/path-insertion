@@ -1,0 +1,51 @@
+# Please format each line as "[key]: [value]"
+# You can also leave a line empty or start with "#" to indicate a comment
+
+
+#########################################################
+### Config files: infrastructure and conflict margins ###
+#########################################################
+
+infra_file: ../config/infrastructure-details-RailDresden.txt
+conflicts_file: ../config/conflict_margins.txt
+train_route_file: ../data/train_routes.txt
+running_times_file: ../data/generated_running_times.csv
+
+
+##################################################
+### Requested departure and arrival generation ###
+##################################################
+
+generate_requested_times: True
+affected_trains_file: ../data/affected_trains.csv
+affected_trains_with_requests_file: ../data/affected_trains_with_requests.csv
+time_windows_request_generation: ../data/time_windows_request_generation.csv
+
+
+###########################################
+### Parameter values for all algorithms ###
+###########################################
+
+time_from: 2021-03-13 20:00
+time_to: 2021-03-15 08:00
+overall_train_route: Ä-Cst
+filter_close_paths: False
+process_full_timetable: False
+print_track_problems: False
+print_runtime: True
+
+
+#########################################
+### Single train insertion parameters ###
+#########################################
+
+speed_profile: GB201210
+train_id: 45693
+output_file_single_insertion: ../out/candidate_paths.csv
+
+
+######################################
+### Multiple insertions parameters ###
+######################################
+
+affected_trains_file: ../data/affected_trains.csv

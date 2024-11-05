@@ -17,12 +17,12 @@ def get_timetable(time_from, time_to, locations, source_file="../data/t21.csv"):
     # to get all potential relevant times (no train departs 3 days before passing some location)
     # To make sure that headways with just out-of-window trains are ok,
     # we use a slightly larger time frame
-    time_from_datetime = datetime.strptime(time_from, "%Y-%m-%d %H:%M")
-    time_from_datetime_floored = datetime.combine(time_from_datetime.date(), time(0, 0, 0)) - timedelta(days=2)
-    time_from_datetime_min10 = time_from_datetime - timedelta(minutes=10)
-    time_to_datetime = datetime.strptime(time_to, "%Y-%m-%d %H:%M")
-    time_to_datetime_ceiled = datetime.combine(time_to_datetime.date(), time(23, 59, 59))
-    time_to_datetime_plus10 = time_to_datetime + timedelta(minutes=10)
+
+    start_time = tm.time()
+    time_from_floored = datetime.combine(time_from.date(), time(0, 0, 0)) - timedelta(days=2)
+    time_from_min10 = time_from - timedelta(minutes=10)
+    time_to_ceiled = datetime.combine(time_to.date(), time(23, 59, 59))
+    time_to_plus10 = time_to + timedelta(minutes=10)
 
     # Read timetable databases, select possibly relevant days and join them
     df_input = pd.read_csv(source_file, sep=",")
@@ -31,11 +31,12 @@ def get_timetable(time_from, time_to, locations, source_file="../data/t21.csv"):
     df_running_specs = pd.read_csv("../data/t21_running_days_temp.csv", sep=",")
     # df_running_specs = pd.read_csv("../data/redundant/t21_running_days OUD.csv", sep=",")
     df_running_specs["date_datetime"] = pd.to_datetime(df_running_specs['date'], format='%Y-%m-%d')
-    df_running_specs = df_running_specs[(df_running_specs["date_datetime"] >= time_from_datetime_floored) & (df_running_specs["date_datetime"] <= time_to_datetime_ceiled)]
+    df_running_specs = df_running_specs[(df_running_specs["date_datetime"] >= time_from_floored) & (df_running_specs["date_datetime"] <= time_to_ceiled)]
 
     df = pd.merge(df, df_running_specs, on="train_ix")
 
-    print("Finished joining input tables")
+    last_time = tm.time()
+    # print("Joining timetable input:", last_time - start_time)
 
     # All "start at station" and "terminate at station" events are hereby removed
     # Without known uppehållstid, those events will not be used while they cause NaN-value issues
@@ -55,8 +56,6 @@ def get_timetable(time_from, time_to, locations, source_file="../data/t21.csv"):
     df['time_end_corrected_time_str'] = df["time_end_corrected"].dt.strftime("%H:%M:%S")
     df['time_end_corrected_date_str'] = df["time_end_corrected"].dt.strftime("%Y-%m-%d")
 
-    print("Finished adjusting end times")
-
     df["time_start_hour"] = df["time_start"].str[0:2]
     df["time_start_hour"] = df["time_start_hour"].astype('int')
     df["time_start_hour_modulo"] = df["time_start_hour"] % 24
@@ -68,22 +67,20 @@ def get_timetable(time_from, time_to, locations, source_file="../data/t21.csv"):
     df['time_start_corrected_time_str'] = df["time_start_corrected"].dt.strftime("%H:%M:%S")
     df['time_start_corrected_date_str'] = df["time_start_corrected"].dt.strftime("%Y-%m-%d")
 
-    print("Finished adjusting start times")
-
     # TODO removed segment keys, improve this part
     df["segment_key"] = df.apply(lambda row: path_insertion.get_key(row["orig"], row["dest"], row["track_id"]), axis=1)
     df["segment_type"] = df.apply(lambda row: path_insertion.get_segment_type_from_row(row), axis=1)
     df["min_headway_before"] = df.apply(lambda row: headway_functions.headway_before(row), axis=1)
     df["min_headway_after"] = df.apply(lambda row: headway_functions.headway_after(row), axis=1)
 
-    df_filtered = df[((df["time_start_corrected"] >= time_from_datetime_min10) & (
-                df["time_start_corrected"] <= time_to_datetime_plus10))
-            | ((df["time_end_corrected"] >= time_from_datetime_min10) & (
-                df["time_end_corrected"] <= time_to_datetime_plus10))
-            | ((df["time_start_corrected"] <= time_from_datetime_min10) & (
-                df["time_end_corrected"] >= time_to_datetime_plus10))]
+    df_filtered = df[((df["time_start_corrected"] >= time_from_min10) & (
+                df["time_start_corrected"] <= time_to_plus10))
+            | ((df["time_end_corrected"] >= time_from_min10) & (
+                df["time_end_corrected"] <= time_to_plus10))
+            | ((df["time_start_corrected"] <= time_from_min10) & (
+                df["time_end_corrected"] >= time_to_plus10))]
 
-    print("Completed preprocessing of T21\n")
+    # print("Preprocessing timetable:", tm.time() - last_time)
 
     return df_filtered.drop(columns=["stn_ix", "activity", "stop_is_possible", "date_datetime", "time_end_hour", "time_end_hour_modulo", "time_end_plus_days", "time_end_reformat", "time_end_date_and_time", "time_end_datetime", "time_end_corrected_time_str", "time_end_corrected_date_str", "time_start_hour", "time_start_hour_modulo", "time_start_plus_days", "time_start_reformat", "time_start_date_and_time", "time_start_datetime", "time_start_corrected_time_str", "time_start_corrected_date_str"])
 
@@ -194,38 +191,55 @@ def remove_linjeplatser(t21, linjeplatser):
     return t21
 
 
-def get_running_times(running_times_file, lineplatser, speed_profile):
+# Reads running times input file and converts it to a usable dictionary
+# We must make sure that we filter linjeplatser from the segments for which we state the running times
+def get_running_times(running_times_file, linjeplatser, speed_profiles):
+    # Read the csv and set all runtimes
     technical_running_times = pd.read_csv(running_times_file)
-    print(technical_running_times)
-    print(speed_profile)
-    running_time = {}
-    for index, row in technical_running_times[technical_running_times["train_type"] == speed_profile].iterrows():
-        print(row)
-        running_time[(row["stn_id_from"], row["stn_id_to"], "r", "r")] = row["rt_forw_pp"]
-        running_time[(row["stn_id_from"], row["stn_id_to"], "r", "s")] = row["rt_forw_ps"]
-        running_time[(row["stn_id_from"], row["stn_id_to"], "s", "r")] = row["rt_forw_sp"]
-        running_time[(row["stn_id_from"], row["stn_id_to"], "s", "s")] = row["rt_forw_ss"]
-        running_time[(row["stn_id_to"], row["stn_id_from"], "r", "r")] = row["rt_forw_pp"]
-        running_time[(row["stn_id_to"], row["stn_id_from"], "r", "s")] = row["rt_forw_ps"]
-        running_time[(row["stn_id_to"], row["stn_id_from"], "s", "r")] = row["rt_forw_sp"]
-        running_time[(row["stn_id_to"], row["stn_id_from"], "s", "s")] = row["rt_forw_ss"]
+    running_time_all_profiles = {}
 
-    print(running_time)
-    for linjeplats in lineplatser:
-        segment = lineplatser[linjeplats]
+    for speed_profile in speed_profiles:
+        running_time = {}
+        for index, row in technical_running_times[technical_running_times["train_type"] == speed_profile].iterrows():
+            running_time[(row["stn_id_from"], row["stn_id_to"], "r", "r")] = row["rt_forw_pp"]
+            running_time[(row["stn_id_from"], row["stn_id_to"], "r", "s")] = row["rt_forw_ps"]
+            running_time[(row["stn_id_from"], row["stn_id_to"], "s", "r")] = row["rt_forw_sp"]
+            running_time[(row["stn_id_from"], row["stn_id_to"], "s", "s")] = row["rt_forw_ss"]
+            running_time[(row["stn_id_to"], row["stn_id_from"], "r", "r")] = row["rt_forw_pp"]
+            running_time[(row["stn_id_to"], row["stn_id_from"], "r", "s")] = row["rt_forw_ps"]
+            running_time[(row["stn_id_to"], row["stn_id_from"], "s", "r")] = row["rt_forw_sp"]
+            running_time[(row["stn_id_to"], row["stn_id_from"], "s", "s")] = row["rt_forw_ss"]
 
-        if (segment[0], segment[-1], "s", "s") in running_time:
-            continue
+        # Add running times for segments containing linjeplatser
+        for linjeplats in linjeplatser:
+            # Get the segment that contains this linjeplats
+            segment = linjeplatser[linjeplats]
 
-        for route in segment, list(reversed(segment)):
-            for rs_start in ["r", "s"]:
-                for rs_end in ["r", "s"]:
-                    runtime = 0
-                    runtime += running_time[(route[0], route[1], rs_start, "r")]
-                    runtime += running_time[(route[-2], route[-1], "r", rs_end)]
-                    for i in range(len(lineplatser) - 2):
-                        runtime += running_time[(route[i+1], route[i+2], "r", "r")]
-                    running_time[(route[0], route[-1], rs_start, rs_end)] = runtime
+            # If we already have running times, we are fine
+            if (segment[0], segment[-1], "s", "s") in running_time:
+                continue
 
-    print(running_time)
-    return running_time
+            # Iterate over both two directions of the route, and for all start/stop combis at start/end
+            for route in segment, list(reversed(segment)):
+                for rs_start in ["r", "s"]:
+                    for rs_end in ["r", "s"]:
+                        # For RailDresden, we fixed this already and do not need to remove the linjeplatser again
+                        # if (route[0], route[-1], rs_start, rs_end) in running_time:
+                        #     continue
+
+                        # Add the runtime from the start and to the end
+                        runtime = 0
+                        runtime += running_time[(route[0], route[1], rs_start, "r")]
+                        runtime += running_time[(route[-2], route[-1], "r", rs_end)]
+
+                        # Add all running times on the intermediate segments if multiple linjeplatser follow each other
+                        for i in range(len(route) - 2):
+                            runtime += running_time[(route[i+1], route[i+2], "r", "r")]
+
+                        # Set result
+                        running_time[(route[0], route[-1], rs_start, rs_end)] = runtime
+
+        running_time_all_profiles[speed_profile] = running_time
+
+    # Return runtime dictionary
+    return running_time_all_profiles

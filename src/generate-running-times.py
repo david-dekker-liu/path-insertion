@@ -10,7 +10,6 @@ if __name__ == "__main__":
 
     running_dates = pd.read_csv("../data/t21_running_days.csv")
     relevant_train_ixs = running_dates[running_dates["date"].isin(["2021-03-14"])]["train_ix"].tolist()
-    print(relevant_train_ixs)
 
     completely_filtered_train_ixs = t21_relevant_route[t21_relevant_route["train_ix"].isin(relevant_train_ixs)]["train_ix"]
 
@@ -93,7 +92,3 @@ if __name__ == "__main__":
                 with open("../data/generated_running_times.csv", "a", encoding="utf-8") as f:
                     f.write(
                         f"{profile},{pair[0]},{pair[1]},{f_pp},{f_ps},{f_sp},{f_ss},{b_pp},{b_ps},{b_sp},{b_ss}\n")
-
-
-            # Now multiply the running times on ref0-ref1 by dist/refdist
-            print(pair, dist)

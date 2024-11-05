@@ -1,3 +1,6 @@
+import time
+
+
 class Infrastructure:
     def __init__(self, infra_config, headway_config):
         # The infrastructure object contains a bunch of dictionaries
@@ -10,6 +13,8 @@ class Infrastructure:
         # * N_stations: neighborhood at stations. Dict from (from, to, station_track) to all segment tracks in between
         # * N_segments: neighborhood at segments. Dict from (from, to, segment_track) to all station tracks at to
 
+        start_time = time.time()
+
         self.headway_dict = {}
         self.stations = {}
         self.segments = {}
@@ -19,13 +24,12 @@ class Infrastructure:
         self.N_stations = {}
         self.N_segments = {}
 
-
         with open(headway_config, encoding="utf-8") as file:
             for line in file:
                 key, value = line.strip().split(":")
                 self.headway_dict[key] = int(value)
 
-        print(self.headway_dict)
+        # print(self.headway_dict)
         with open(infra_config, encoding="utf-8") as file:
             line = file.readline().strip()
 
@@ -35,7 +39,7 @@ class Infrastructure:
                 self.stations[afk] = Station(afk, full, [str(track) for track in track_str.split(" ")])
                 line = file.readline().strip()
 
-            print(self.stations)
+            # print(self.stations)
             line = file.readline().strip()
 
             # Create dictionary of segments
@@ -59,7 +63,7 @@ class Infrastructure:
                     last_segment_tracks = ""
                     km_start = km_end
                 line = file.readline().strip()
-            print(self.segments)
+            # print(self.segments)
             line = file.readline().strip()
 
             while line != "":
@@ -68,7 +72,7 @@ class Infrastructure:
                 self.linjeplatser[linjeplats] = segments
                 line = file.readline().strip()
 
-            print(self.linjeplatser)
+            # print(self.linjeplatser)
             line = file.readline().strip()
 
             # Parse complex segments
@@ -83,7 +87,7 @@ class Infrastructure:
                 self.complex_segments[(dest, orig)] = (km_marks, largest_block_frac)
                 line = file.readline().strip()
 
-            print(self.complex_segments)
+            # print(self.complex_segments)
             line = file.readline().strip()
 
             # Parse transitions
@@ -161,7 +165,7 @@ class Infrastructure:
 
                                 generated_transition_conflicts += [(trafikplats, delay_code, (left_key[0], str(l1), left_key[2], str(l3)), (right_key[0], str(r1), right_key[2], str(r3)))]
 
-            print(generated_transition_conflicts)
+            # print(generated_transition_conflicts)
 
             # Create the desired dictionary with all movements that conflict a given movement
             for transition in generated_transition_conflicts:
@@ -176,7 +180,7 @@ class Infrastructure:
                 else:
                     self.transitions[right_key] = [(left_key, 0, self.headway_dict[delay_code])]
 
-            print(self.transitions)
+            # print(self.transitions)
             line = file.readline().strip()
 
             last_station = ""
@@ -210,10 +214,11 @@ class Infrastructure:
                     last_segment_tracks = ""
                 line = file.readline().strip()
 
-            print(self.N_stations)
-            print(self.N_segments)
-            print(self.segments)
+            # print(self.N_stations)
+            # print(self.N_segments)
+            # print(self.segments)
 
+            # print("Reading infrastructure:", time.time() - start_time)
 
 class Station:
     def __init__(self, station, name, tracks):

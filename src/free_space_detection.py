@@ -83,8 +83,6 @@ def get_free_spaces_transitions(t21, train_to_insert, TIME_FROM_DATETIME, TIME_T
     for transition in relevant_transitions:
         # print("curr trans", transition)
         # All conflicting ones
-        if transition ==  ('Bäf', 'E', 'Ed', '2'):
-            print("hi?")
         conflicting_transitions = relevant_transitions[transition]
         conflicts = [x[0] for x in conflicting_transitions]
         conflicting_transitions_dict_before = {}
@@ -144,7 +142,7 @@ def get_free_spaces_transitions(t21, train_to_insert, TIME_FROM_DATETIME, TIME_T
 
 def get_free_spaces_segments(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_DATETIME, relevant_segments, infra):
     free_space_dict = {}
-    for segment in relevant_segments:
+    for segment in relevant_segments.keys():
         orig = segment[0]
         dest = segment[1]
         corresponding_segment = infra.segments[(orig, dest)]
@@ -162,7 +160,7 @@ def get_free_spaces_segments(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_D
                 relevant_timetable["blocks_from_dest"] = relevant_timetable["time_end_corrected"] - pd.to_timedelta(np.maximum(min_headway_after, relevant_timetable["min_headway_before"]), 's')
                 relevant_timetable["blocks_until_dest"] = relevant_timetable["time_end_corrected"] + pd.to_timedelta(np.maximum(min_headway_before, relevant_timetable['min_headway_after']), 's')
 
-            elif len(infra_segment.tracks) == 1 and (orig, dest) not in infra.complex_segments:
+            elif len(infra_segment.tracks) == 1:
                 relevant_timetable = t21[((t21["orig"] == orig) & (t21["dest"] == dest) | (t21["orig"] == dest) & (t21["dest"] == orig)) & (t21["track_id"] == track)]
 
                 relevant_timetable["blocks_from_orig"] = relevant_timetable["time_start_corrected"] - pd.to_timedelta(60, 's')
@@ -170,20 +168,20 @@ def get_free_spaces_segments(t21, train_to_insert, TIME_FROM_DATETIME, TIME_TO_D
                 relevant_timetable["blocks_from_dest"] = relevant_timetable["time_start_corrected"] - pd.to_timedelta(60, 's')
                 relevant_timetable["blocks_until_dest"] = relevant_timetable["time_end_corrected"] + pd.to_timedelta(60, 's')
 
-            elif len(infra_segment.tracks) == 1:
-                relevant_timetable = t21[((t21["orig"] == orig) & (t21["dest"] == dest) | (t21["orig"] == dest) & (t21["dest"] == orig)) & (t21["track_id"] == track)]
-
-                largest_block_fraction = infra.complex_segments[(orig, dest)][1]
-                relevant_timetable["block_occupation_length"] = (relevant_timetable["time_end_corrected"] - relevant_timetable["time_start_corrected"]).dt.seconds * largest_block_fraction
-
-                relevant_timetable["blocks_from_orig"] = relevant_timetable.apply(lambda x: x["time_start_corrected"] - pd.to_timedelta(60, 's') if x["orig"] == dest else x["time_start_corrected"] - pd.to_timedelta(x["block_occupation_length"], 's'), axis=1)
-
-                relevant_timetable["blocks_until_orig"] = relevant_timetable.apply(lambda x: x["time_end_corrected"] + pd.to_timedelta(60, 's') if x["orig"] == dest else x["time_start_corrected"] + pd.to_timedelta(x["block_occupation_length"], 's'), axis=1)
-
-                relevant_timetable["blocks_from_dest"] = relevant_timetable.apply(lambda x: x["time_start_corrected"] - pd.to_timedelta(60, 's') if x["orig"] == dest else x["time_end_corrected"] - pd.to_timedelta(x["block_occupation_length"], 's'), axis=1)
-
-                relevant_timetable["blocks_until_dest"] = relevant_timetable.apply(lambda x: x["time_end_corrected"] + pd.to_timedelta(60, 's') if x["orig"] == dest else x["time_end_corrected"] + pd.to_timedelta(x["block_occupation_length"], 's'), axis=1)
-
+            # elif len(infra_segment.tracks) == 1:
+            #     relevant_timetable = t21[((t21["orig"] == orig) & (t21["dest"] == dest) | (t21["orig"] == dest) & (t21["dest"] == orig)) & (t21["track_id"] == track)]
+            #
+            #     largest_block_fraction = infra.complex_segments[(orig, dest)][1]
+            #     relevant_timetable["block_occupation_length"] = (relevant_timetable["time_end_corrected"] - relevant_timetable["time_start_corrected"]).dt.seconds * largest_block_fraction
+            #
+            #     relevant_timetable["blocks_from_orig"] = relevant_timetable.apply(lambda x: x["time_start_corrected"] - pd.to_timedelta(60, 's') if x["orig"] == dest else x["time_start_corrected"] - pd.to_timedelta(x["block_occupation_length"], 's'), axis=1)
+            #
+            #     relevant_timetable["blocks_until_orig"] = relevant_timetable.apply(lambda x: x["time_end_corrected"] + pd.to_timedelta(60, 's') if x["orig"] == dest else x["time_start_corrected"] + pd.to_timedelta(x["block_occupation_length"], 's'), axis=1)
+            #
+            #     relevant_timetable["blocks_from_dest"] = relevant_timetable.apply(lambda x: x["time_start_corrected"] - pd.to_timedelta(60, 's') if x["orig"] == dest else x["time_end_corrected"] - pd.to_timedelta(x["block_occupation_length"], 's'), axis=1)
+            #
+            #     relevant_timetable["blocks_until_dest"] = relevant_timetable.apply(lambda x: x["time_end_corrected"] + pd.to_timedelta(60, 's') if x["orig"] == dest else x["time_end_corrected"] + pd.to_timedelta(x["block_occupation_length"], 's'), axis=1)
+            #
             else:
                 raise Exception("No tracks found at segment")
 
