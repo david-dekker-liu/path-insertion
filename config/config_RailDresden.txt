@@ -6,7 +6,7 @@
 ### Config files: infrastructure and conflict margins ###
 #########################################################
 
-infra_file: ../config/infrastructure-details-RailDresden.txt
+infra_file: ../config/infrastructure-details-RailDresden-reduced.txt
 conflicts_file: ../config/conflict_margins.txt
 train_route_file: ../data/train_routes.txt
 running_times_file: ../data/generated_running_times.csv
@@ -16,10 +16,11 @@ running_times_file: ../data/generated_running_times.csv
 ### Requested departure and arrival generation ###
 ##################################################
 
-generate_requested_times: True
+generate_requested_times: False
 affected_trains_file: ../data/affected_trains.csv
 affected_trains_with_requests_file: ../data/affected_trains_with_requests.csv
 time_windows_request_generation: ../data/time_windows_request_generation.csv
+debug_shortest_path_export: . # Old setting: ../out/debug_shortest_paths_20241109.csv
 
 
 ###########################################
@@ -28,24 +29,27 @@ time_windows_request_generation: ../data/time_windows_request_generation.csv
 
 time_from: 2021-03-13 20:00
 time_to: 2021-03-15 08:00
+log_file: ../out/log_tests_20241109.csv
+path_output_file: ../out/candidate_paths_tests_20241109.csv
 overall_train_route: Ä-Cst
-filter_close_paths: False
-process_full_timetable: False
+filter_close_paths: True
+process_full_timetable: True
 print_track_problems: False
 print_runtime: True
 
 
-#########################################
-### Single train insertion parameters ###
-#########################################
+#############################################
+### Parameters for single train insertion ###
+#############################################
 
 speed_profile: GB201210
 train_id: 45693
-output_file_single_insertion: ../out/candidate_paths.csv
 
 
-######################################
-### Multiple insertions parameters ###
-######################################
+##########################################
+### Parameters for multiple insertions ###
+##########################################
 
-affected_trains_file: ../data/affected_trains.csv
+partition_on_priority: False
+max_request_deviation_minutes: 210
+candidate_paths_file: ../out/candidate_paths_20241109.csv

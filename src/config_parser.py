@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 import pandas as pd
 from src.path_algorithms import generate_candidate_paths
@@ -18,10 +19,19 @@ def read_config(config_file):
             # Booleans are converted to booleans rather than strings
             # Dates/times are converted to datetime object
             key, value = line.split(": ", 1)
+
+            if " # " in value:
+                value = value.split(" # ")[0]
+
             if key in ["time_from", "time_to"] and value.count(":") == 1:
                 config[key] = datetime.strptime(value, "%Y-%m-%d %H:%M")
             elif key in ["time_from", "time_to"] and value.count(":") == 2:
                 config[key] = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+            elif key in ["path_output_file", "log_file", "debug_shortest_path_export"]:
+                if value == "-" or value == "x" or value == "." or value == "\"" or value == "\"\"" or value == "\'" or value == "\'\'":
+                    config[key] = ""
+                else:
+                    config[key] = value
             elif value.upper() not in ["TRUE", "FALSE"]:
                 config[key] = value
             else:
@@ -60,18 +70,19 @@ def generate_requested_times(affected_trains_file, affected_trains_file_with_req
     affected_trains = pd.read_csv(affected_trains_file, sep=";", encoding="utf-8")
     output = affected_trains_file_with_requests
     time_windows = pd.read_csv(time_windows_request_generation, sep=";", encoding="utf-8")
+    log_file = config["log_file"]
 
     first_date = datetime(1970, 1, 1)
 
+    if os.path.exists(config["debug_shortest_path_export"]):
+        os.remove(config["debug_shortest_path_export"])
+
     with open(output, "w+", encoding="utf-8") as f:
-        f.write(f"trnr;profile;route;dep;arr\n")
+        f.write(f"trnr;profile;route;priority;dep;arr\n")
 
     for index, row in affected_trains.iterrows():
         route = row["route"]
-        # if route[0] != "Ä":
-        #     continue
-
-        orig, dest = route.split("-")
+        priority = row["priority"]
 
         time_orig = row["orig_dep"]
         time_dest = row["orig_arr"]
@@ -86,7 +97,7 @@ def generate_requested_times(affected_trains_file, affected_trains_file_with_req
         time_to = datetime.strptime(time_window["time_to"], "%Y-%m-%d %H:%M:%S")
 
         # Get fastest possible path in time window [time_from, time_to]
-        path = generate_candidate_paths(infra, trnr, profile, running_times, t21, time_from, time_to, train_route_dict[route], "", False, free_space_dict_stations, free_space_dict_segments, free_space_dict_transitions, "", 0, 0, False, config, True)
+        path = generate_candidate_paths(infra, trnr, profile, running_times, t21, time_from, time_to, train_route_dict[route], config["debug_shortest_path_export"], False, free_space_dict_stations, free_space_dict_segments, free_space_dict_transitions, log_file, 0, 0, False, config, True)
 
         first_record = path.iloc[0]
         last_record = path.iloc[-1]
@@ -100,7 +111,6 @@ def generate_requested_times(affected_trains_file, affected_trains_file_with_req
         arrival = first_record["time_start"]
         departure = last_record["time_end"]
         runtime = (arrival - departure).total_seconds()
-        print(arrival, departure, runtime, runtime/3600)
 
         # Split original dep/end times in hours + minutes (+ seconds if included)
         orig_split = time_orig.split(":")
@@ -137,6 +147,8 @@ def generate_requested_times(affected_trains_file, affected_trains_file_with_req
 
         new_orig = first_date + timedelta(seconds=int(avg - runtime/2))
         new_dest = first_date + timedelta(seconds=int(avg + runtime/2))
+
         with open(output, "a", encoding="utf-8") as f:
-            f.write(f"{trnr};{profile};{route};{new_orig};{new_dest}\n")
+            f.write(f"{trnr};{profile};{route};{priority};{new_orig};{new_dest}\n")
+
         print(trnr, orig_datetime, dest_datetime, avg_datetime, new_orig, new_dest)

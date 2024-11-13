@@ -7,10 +7,19 @@ from datetime import timedelta
 
 if __name__ == "__main__":
     dark_mode = True
+    infra = Infrastructure("../config/infrastructure-details-RailDresden-reduced.txt", "../config/conflict_margins.txt")
+
     train_route = ["Ä", "Baa", "Vip", "För", "Bån", "Laov", "Ea", "Kst", "Hdr", "Hd", "Fur", "Btp", "Bp", "He", "Fab", "Teo", "Tye", "Haa", "Vb", "Vrö", "Få", "Åsa", "Lek", "Kb", "Khe", "Lgd", "Ag", "Ldo", "Krd", "Mdn", "Am", "Lis", "Gro", "G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö", "Fa", "Lå", "Lln", "Vt", "Öj", "Täl", "Hrbg", "Hpbg", "På", "Km", "Hgö", "Vr", "Bt", "K", "Spn", "Sde", "Fle", "Skv", "Sp", "Nsj", "Sh", "B", "Koe", "Gn", "Mö", "Jn", "Söö", "Msj", "Bjn", "Flb", "Hu", "Sta", "Äs", "Åbe", "Sst", "Cst"]
+
+    all_linjeplatser = []
+    for l in infra.linjeplatser:
+        all_linjeplatser += infra.linjeplatser[l][1:-1]
+
+    train_route = [k for k in train_route if k not in all_linjeplatser]
+    print(train_route)
     # train_route = ["G", "Or", "Or1", "Gsv", "Säv", "Sel", "P", "Jv", "J", "Apn", "Asd", "Lr", "Sn", "Fd", "Ndv", "Ns", "Vbd", "Bgs", "A", "Agg", "Vgå", "Hr", "Kä", "Fby", "F", "Fn", "Ss", "Rmtp", "Sk", "Vä", "Mh", "T", "Sle", "Äl", "Gdö", "Fa", "Lå", "Lln", "Vt", "Öj", "Täl", "Hrbg", "Hpbg", "På", "Km", "Hgö", "Vr", "Bt", "K", "Spn", "Sde", "Fle", "Skv", "Sp", "Nsj", "Sh", "B", "Koe", "Gn", "Mö", "Jn", "Söö", "Msj", "Bjn", "Flb", "Hu", "Sta", "Äs", "Åbe", "Sst", "Cst"]
 
-    train_route = list(reversed(train_route))
+    # train_route = list(reversed(train_route))
     adj_pairs = [(train_route[i], train_route[i+1]) for i in range(len(train_route) - 1)]
 
     locations_to_label = ["F", "Sk", "Hrbg", "K", "A", "Hr", "Söö", "Gdö"]
@@ -19,8 +28,6 @@ if __name__ == "__main__":
     TIME_FROM_DATETIME = datetime.strptime(TIME_FROM, "%Y-%m-%d %H:%M")
     TIME_TO_DATETIME = datetime.strptime(TIME_TO, "%Y-%m-%d %H:%M")
     time_window = (TIME_TO_DATETIME - TIME_FROM_DATETIME).total_seconds()
-
-    infra = Infrastructure("../config/infrastructure-details-RailDresden.txt", "../config/conflict_margins.txt")
 
     last_loc = ""
     to_dist_dict = {}
@@ -34,6 +41,7 @@ if __name__ == "__main__":
 
         last_loc = loc
 
+    print(to_dist_dict)
     output_file = "../out/timetable.svg"
     df = pd.read_csv("../data/filtered_t21.csv", sep=";")
     # df = df[(df["orig"].isin(to_dist_dict.keys())) & (df["dest"].isin(to_dist_dict.keys())) & df["track_id"].isin(["U", "E", "A", "U1", "U1S", "N2S", "1"])]
@@ -105,7 +113,11 @@ if __name__ == "__main__":
         path_commands += [current_path_command + "' style='fill:none;stroke:black;stroke-width:2.5'/>"]
 
     # df = pd.read_csv("../out/temp_obtained_paths.csv", sep=";")
-    df = pd.read_csv("../out/candidate_paths.csv", sep=";")
+    # df = pd.read_csv("../out/candidate_paths.csv", sep=";")
+    df = pd.read_csv("C:\\Users\\davde78\\Documents\\sos-project\\out\\candidate_paths_20241109.csv", sep=",", encoding="utf-8")
+    df = df[df["train_id"] == 41755]
+
+    # df = pd.read_csv("C:\\Users\\davde78\\Documents\\sos-project\\data\\candidate paths indep set\\candidate_paths_511.csv", sep=";")
     df = df[(df["orig"].isin(to_dist_dict.keys())) & (df["dest"].isin(to_dist_dict.keys()))]
     df = df.sort_values(by=["train_ix", "time_start"])
 

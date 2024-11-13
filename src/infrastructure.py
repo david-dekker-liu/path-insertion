@@ -220,6 +220,7 @@ class Infrastructure:
 
             # print("Reading infrastructure:", time.time() - start_time)
 
+
 class Station:
     def __init__(self, station, name, tracks):
         self.station = station

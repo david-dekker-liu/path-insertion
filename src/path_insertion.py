@@ -1,3 +1,4 @@
+import os
 import shutil
 import time
 
@@ -12,26 +13,11 @@ import src.timetable_creation as timetable_creation
 import src.interval_utils as intutils
 from src.intervals import LinkedInterval, Interval
 from src.infrastructure import Infrastructure, Station, Segment
+from src.general_utils import obj, print_runtime
 
 # TODO Test first if it is a predefined exception,
 # TODO i.e., single-track line with smaller blocks.
 
-
-def obj(t1, t2, req1, req2):
-    result = 0
-    alpha2 = 0.00000003
-    alpha3 = 0.00000003
-    alpha1 = 1 - alpha2 - alpha3
-
-    if t1 < req1:
-        result += alpha2 * ((req1 - t1).total_seconds()) * ((req1 - t1).total_seconds())
-
-    if t2 > req2:
-        result += alpha3 * ((t2 - req2).total_seconds()) * ((t2 - req2).total_seconds())
-
-    result += alpha1 * (t2 - t1).total_seconds() / (req2 - req1).total_seconds()
-
-    return result
 
 def get_segment_type_from_row(row):
     return get_segment_type_from_values(row["dest"], row["track_id"])
@@ -48,57 +34,6 @@ def get_segment_type_from_values(dest, track_id):
     return "multiple_block_segments"
 
 
-# TODO deprecated replaced by infrastructure file
-# Returns a dictionary from (station, segment) or (segment, station) and track_id
-# to a list with all allowed track_id's to arrive on
-# TODO merge with a list of deviations
-def get_allowed_movements_at_arrival():
-    # WARNING special value for None keys: nananan
-    # Notice the sorting on time_end: the start station (with NaN time_start) is now put at the start
-    # Filter away all combinations of end first train + start next train
-    df = pd.read_csv("../data/t21.csv", sep=",")
-    df = df.replace(np.nan, "nananan")
-    df = df[["train_ix", "orig", "dest", "time_start", "time_end", "track_id", "ordinal"]]
-    df = df.sort_values(["train_ix", "time_end", "ordinal"])
-    df_merged = pd.concat([df, df.shift(-1).add_prefix("next_")], axis=1)
-    df_merged = df_merged[df_merged["train_ix"] == df_merged["next_train_ix"]]
-
-    df_merged = df_merged.drop_duplicates(["orig", "dest", "next_orig", "next_dest", "track_id", "next_track_id"])
-    df_merged = df_merged.groupby(["orig", "dest", "next_orig", "next_dest", "track_id"], dropna=False, as_index=False).agg({"next_track_id": lambda x: list(x)})
-
-    possible_movements_dict = {}
-    for index, row in df_merged.iterrows():
-        possible_movements_dict[(row["orig"], row["dest"], row["next_orig"], row["next_dest"], row["track_id"])] = row["next_track_id"]
-        if pd.isnull(row["dest"]) and pd.isnull(row["next_dest"]):
-            print("Detected impossible movement")
-            print(row["orig"], row["dest"], row["next_orig"], row["next_dest"], row["track_id"], row["next_track_id"])
-            # raise Exception
-    # Hardcode avoiding tracks that should not be used for northbound running trains, but are used as track to turn round (or go in a different direction)
-    possible_movements_dict[("Nol", "Än", "Än", "nananan", "U")] = ["2"]
-    possible_movements_dict[("Veas", "Thn", "Thn", "nananan", "U")] = ["1"]
-    possible_movements_dict[("Öx", "nananan", "Öx", "Bjh", "60")] = []
-    possible_movements_dict[("Öx", "nananan", "Öx", "Bjh", "3")] = []
-    possible_movements_dict[("Gbm", "nananan", "Gbm", "Agb", "41")] = []
-    possible_movements_dict[("Veas", "Thn", "Thn", "nananan", "U")] = ["1"]
-
-    return possible_movements_dict
-
-
-# Assumes "E" means there is 1 track available so single-track
-# Assumes key structure orig-dest_trackid and loc/trackid
-def is_key_single_track(input_key):
-    if "_" not in input_key:
-        return False
-    return "E" in input_key.rsplit("_", 1)[1]
-
-
-def is_pair_single_track(orig, dest, all_keys):
-    for seg_key in all_keys:
-        if get_key(orig, dest, "E") in seg_key:
-            return True
-    return False
-
-
 # Returns a string to index each segment with
 # for double-track the direction matters, for single track it does not
 def get_key(orig, dest, track_id):
@@ -107,37 +42,26 @@ def get_key(orig, dest, track_id):
     return min(orig, dest) + "-" + max(orig, dest) + "_" + track_id
 
 
-def get_transition_key(orig, dest, station_track_id, segment_track_id, arriving):
-    return orig + "=" + dest + "+" + str(station_track_id) + "=" + str(segment_track_id) + "&" + str(arriving)
-
-
-# For each track number of a segment, one orientation is picked
-# For double-track, this is the "logical" orientation (TODO verify: is it?),
-# for single-track, an arbitrary orientation is chosen,
-# so that is the only occasion where an (oriented) segment may not be found (TODO verify again)
-def get_segment_track_list(df, loc_from, loc_to):
-    expected_result = df[(df["stn_id_from"] == loc_from) & (df["stn_id_to"] == loc_to)]["line_track_id"].drop_duplicates().tolist()
-    if len(expected_result) != 0:
-        return expected_result
-    else:
-        return df[(df["stn_id_to"] == loc_from) & (df["stn_id_from"] == loc_to)]["line_track_id"].drop_duplicates().tolist()
-
-
-# Returns all track ids that are used in a station in input dataframe
-# Only considers first station in pairs
-def get_station_track_list(df, loc):
-    expected_result = df[(df["orig"] == loc) & (df["dest"].isnull())]["track_id"].drop_duplicates().tolist()
-    return expected_result
-
-
 def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time_all_profiles, t21, time_from, time_to, train_route, output_file, filter_close_paths, free_space_dict_stations, free_space_dict_segments, free_space_dict_transitions, log_file="../out/log.csv", req_dep=0, req_arr=0, add_to_t21=False, config={}, only_fastest=False):
 
     print("")
-    time_start = time.time()
+    current_time = time.time()
     output_paths = []
     running_time = running_time_all_profiles[speed_profile]
 
     segments = [(train_route[i], train_route[i+1]) for i in range(len(train_route) - 1)]
+
+    # Determine the absolutely necessary minimum running time to reach the destination
+    # We can therefore prune intervals that can never reach the destination in time
+    min_runtime = {}
+    reversed_route = list(reversed(train_route))
+    last_tpl = reversed_route[0]
+    total_runtime = 0
+    min_runtime[last_tpl] = 0
+    for tpl in reversed_route[1:]:
+        total_runtime += int(running_time[(tpl, last_tpl, "r", "r")])
+        min_runtime[tpl] = total_runtime
+        last_tpl = tpl
 
     # Get all station tracks for which we need precomputations
     # These are derived from the infra neighborhood dicts,
@@ -183,8 +107,11 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
 
     # Initialize the dynamic-ish program at the start location
     # Initial run-through is impossible, all free spaces at all tracks give possible departures
+
+    first_loc_max_time = time_to - timedelta(seconds=min_runtime[first_loc])
+
     for station_track in relevant_station_tracks[first_loc]:
-        station_parked_occupations[(first_loc, station_track)] = interval_utils.intersect_intervals([LinkedInterval(x.start, x.end, x.start, x.end) for x in free_space_dict_stations[(first_loc, station_track)]], [Interval(time_from, time_to)])
+        station_parked_occupations[(first_loc, station_track)] = interval_utils.intersect_intervals([LinkedInterval(x.start, x.end, x.start, x.end) for x in free_space_dict_stations[(first_loc, station_track)]], [Interval(time_from, first_loc_max_time)])
         station_runthrough_occupations[(first_loc, station_track)] = []
 
     # Now traverse all given segments
@@ -192,6 +119,8 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
         # Identify segment
         current_vertex = train_route[count]
         next_vertex = train_route[count+1]
+        next_max_time = time_to - timedelta(seconds=min_runtime[next_vertex])
+
 
         # print("Current vertex", current_vertex, "with tracks", get_station_track_list(t21, current_vertex))
 
@@ -296,26 +225,21 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
 
                 interm = [lint for lint in station_parked_occupations_temp[(next_vertex, station_track)] if lint.start != lint.end]
 
-                station_parked_occupations[(next_vertex, station_track)] = intutils.intersect_intervals(intutils.merge_intervals([interm]), [Interval(time_from, time_to)])
+                station_parked_occupations[(next_vertex, station_track)] = intutils.intersect_intervals(intutils.merge_intervals([interm]), [Interval(time_from, next_max_time)])
 
             if station_track in entering_station_candidates_towards_runthrough:
                 station_runthrough_occupations_temp[(next_vertex, station_track)] = intutils.intersect_intervals(entering_station_candidates_towards_runthrough[station_track], free_space_dict_stations[(next_vertex, station_track)])
 
                 interm = [lint for lint in station_runthrough_occupations_temp[(next_vertex, station_track)] if lint.start != lint.end]
 
-                station_runthrough_occupations[(next_vertex, station_track)] = intutils.intersect_intervals(intutils.merge_intervals([interm]), [Interval(time_from, time_to)])
+                station_runthrough_occupations[(next_vertex, station_track)] = intutils.intersect_intervals(intutils.merge_intervals([interm]), [Interval(time_from, next_max_time)])
 
-    if config["print_runtime"]:
-        print("Filling dynamic programming tables:", time.time() - time_start)
-    current_time = time.time()
+    current_time = print_runtime("Filling dynamic programming tables", current_time, config)
 
     last_vertex = train_route[-1]
     options = []
 
     alg_finish = time.time()
-    if log_file != "":
-        with open(log_file, "a", encoding="utf-8") as f:
-            f.write(f"{train_to_insert};algorithm;{alg_finish - time_start}\n")
 
     #########################
     ### PATH BACKTRACKING ###
@@ -419,10 +343,7 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
     # for k in next_options:
     #     print(k[2], k[1], req_dep, req_arr, obj(k[2], k[1], req_dep, req_arr))
 
-    if config["print_runtime"]:
-        print("Preprocessed path options:", time.time() - current_time)
-        print("#paths for backtracking:", len(next_options))
-    current_time = time.time()
+    current_time = print_runtime("Preprocessing path options", current_time, config)
 
     ###########################
     ### ACTUAL BACKTRACKING ###
@@ -430,11 +351,7 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
 
     # Write header, arrivals at destination and store those times for segment descriptions
     last_time = {}
-    # if output_file != "":
-    #     with open(output_file, 'w+', encoding='utf-8') as f:
-    #         f.write("train_ix;train_id;variant;orig;dest;track_id;time_start;time_end;date\n")
-    #         for opt in next_options:
-    #             f.write(f"{train_to_insert}999{opt[4]};{train_to_insert};{opt[4]};{train_route[-1]};;{opt[0]};{datetime.strftime(opt[1], '%Y-%m-%d %H:%M:%S')};;{datetime.strftime(opt[1], '%Y-%m-%d')}\n")
+
     for opt in next_options:
         output_paths.append(
             {
@@ -509,11 +426,10 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
                     # get the time it would depart from there (+ arrive)
                     # TODO may be a problem when longer intervals are split due to rounding?
                     if from_s_range != 0:
-                        # Try all possible tracks at the previous trafikplats
-                        for prev_track in infra.stations[trafikplats].tracks:
-                            if (trafikplats, last_vertex, prev_track) not in infra.N_stations or segment_track not in infra.N_stations[(trafikplats, last_vertex, prev_track)]:
-                                continue
+                        prev_tracks = list(reversed([k[2] for k in infra.N_stations if k[0] == trafikplats and k[1] == last_vertex and segment_track in infra.N_stations[k]]))
 
+                        # Try all possible tracks at the previous trafikplats
+                        for prev_track in prev_tracks:
                             # Get intervals that correspond with the given original departure
                             track_options = [v for v in backtrack_after_stop[(trafikplats, prev_track)] if v.orig_start <= start_time <= v.orig_end]
 
@@ -561,10 +477,11 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
                         from_r_range = 0
 
                     if from_r_range != 0 and trafikplats != train_route[0]:
-                        for prev_track in infra.stations[trafikplats].tracks:
-                            if (trafikplats, last_vertex, prev_track) not in infra.N_stations or segment_track not in infra.N_stations[(trafikplats, last_vertex, prev_track)]:
-                                continue
+                        prev_tracks = list(reversed([k[2] for k in infra.N_stations if
+                                       k[0] == trafikplats and k[1] == last_vertex and segment_track in
+                                       infra.N_stations[k]]))
 
+                        for prev_track in prev_tracks:
                             track_options = [v for v in backtrack_after_runthrough[(trafikplats, prev_track)] if v.orig_start <= start_time <= v.orig_end]
 
                             new_times = interval_utils.intersect_one_interval(from_r_range, track_options)
@@ -574,9 +491,9 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
 
                             corresponding_track_options = [v for v in track_options if v.start <= new_times.start <= new_times.end <= v.end]
 
-                            if len(corresponding_track_options) > 1:
-                                raise Exception("Multiple corresponding tracks found. Maybe take first one?")
-
+                            # if len(corresponding_track_options) > 1:
+                            #     raise Exception("Multiple corresponding tracks found. Maybe take first one?")
+                            #
                             corresponding_track_option = corresponding_track_options[0]
 
                             # Two options: one starting point as a goal, or a parallel range of paths
@@ -595,20 +512,6 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
                                     best_arrival_track = prev_track
                                     best_time = new_time_option
                                     best_time_arr = 0
-
-            # print(best_time_arr, "/", best_time, trafikplats, best_arrival_track, last_vertex, best_segment_track)
-            # if output_file != "":
-            #     with open(output_file, 'a+', encoding='utf-8') as f:
-            #         f.write(
-            #             f"{train_to_insert}999{train_id};"
-            #             f"{train_to_insert};"
-            #             f"{train_id};"
-            #             f"{trafikplats};"
-            #             f"{last_vertex};"
-            #             f"{best_segment_track};"
-            #             f"{datetime.strftime(best_time, '%Y-%m-%d %H:%M:%S')};"
-            #             f"{datetime.strftime(last_time[train_id], '%Y-%m-%d %H:%M:%S')};"
-            #             f"{datetime.strftime(best_time, '%Y-%m-%d')}\n")
 
             output_paths.append(
                 {
@@ -636,19 +539,6 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
 
             if not add_to_t21:
                 last_time[train_id] = arr
-
-            # if output_file != "":
-            #     with open(output_file, 'a+', encoding='utf-8') as f:
-            #         f.write(
-            #             f"{train_to_insert}999{train_id};"
-            #             f"{train_to_insert};"
-            #             f"{train_id};"
-            #             f"{trafikplats};"
-            #             f";"
-            #             f"{best_arrival_track};"
-            #             f"{datetime.strftime(arr, '%Y-%m-%d %H:%M:%S')};"
-            #             f"{datetime.strftime(dep, '%Y-%m-%d %H:%M:%S')};"
-            #             f"{datetime.strftime(arr, '%Y-%m-%d')}\n")
 
             output_paths.append(
                 {
@@ -714,17 +604,12 @@ def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time
     prev_vertex = 0
 
     total_finish = time.time()
-    if log_file != "":
-        with open(log_file, "a", encoding="utf-8") as f:
-            f.write(f"{train_to_insert};backtracking;{total_finish - alg_finish}\n")
 
-    if config["print_runtime"]:
-        print("Backtracking:", time.time() - current_time)
-
+    current_time = print_runtime("Backtracking", current_time, config)
     output_df = pd.DataFrame(output_paths)
 
     if output_file != "":
-        output_df.to_csv(output_file, encoding="utf-8", sep=";")
+        output_df.to_csv(output_file, mode='a', index=False, date_format='%Y-%m-%d %H:%M:%S', header=not os.path.exists(output_file))
 
     return output_df
 

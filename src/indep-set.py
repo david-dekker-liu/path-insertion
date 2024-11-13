@@ -2,23 +2,8 @@ import pandas as pd
 from gurobipy import *
 from random import *
 from datetime import datetime, timedelta
+from src.general_utils import obj
 
-
-def obj(t1, t2, req1, req2):
-    result = 0
-    alpha2 = 0.00000003
-    alpha3 = 0.00000003
-    alpha1 = 1 - alpha2 - alpha3
-
-    if t1 < req1:
-        result += alpha2 * ((req1 - t1).total_seconds()) * ((req1 - t1).total_seconds())
-
-    if t2 > req2:
-        result += alpha3 * ((t2 - req2).total_seconds()) * ((t2 - req2).total_seconds())
-
-    result += alpha1 * (t2 - t1).total_seconds() / (req2 - req1).total_seconds()
-
-    return result
 
 def solve_indepset():
     train_dict = {("GB201210", "AFle"): [44100, 44150], ("GB201210", "AHrbg"): [44980], ("GB201610", "ACst"): [41406],

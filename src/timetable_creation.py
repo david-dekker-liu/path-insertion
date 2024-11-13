@@ -18,6 +18,8 @@ def get_timetable(time_from, time_to, locations, source_file="../data/t21.csv"):
     # To make sure that headways with just out-of-window trains are ok,
     # we use a slightly larger time frame
 
+    mapped = {"Sär": "Säv", "Hrbi": "Hrbg", "Hrbu": "Hrbg"}
+
     start_time = tm.time()
     time_from_floored = datetime.combine(time_from.date(), time(0, 0, 0)) - timedelta(days=2)
     time_from_min10 = time_from - timedelta(minutes=10)
@@ -25,10 +27,11 @@ def get_timetable(time_from, time_to, locations, source_file="../data/t21.csv"):
     time_to_plus10 = time_to + timedelta(minutes=10)
 
     # Read timetable databases, select possibly relevant days and join them
+    # TODO fix this ugly mapped solution, to map Sär->Säv and similar at Hrbg
     df_input = pd.read_csv(source_file, sep=",")
-    df = df_input[df_input["orig"].isin(locations) | df_input["dest"].isin(locations)]
+    df = df_input[df_input["orig"].isin(locations) | df_input["dest"].isin(locations) | df_input["orig"].isin(mapped) | df_input["dest"].isin(mapped)]
 
-    df_running_specs = pd.read_csv("../data/t21_running_days_temp.csv", sep=",")
+    df_running_specs = pd.read_csv("../data/t21_running_days.csv", sep=",")
     # df_running_specs = pd.read_csv("../data/redundant/t21_running_days OUD.csv", sep=",")
     df_running_specs["date_datetime"] = pd.to_datetime(df_running_specs['date'], format='%Y-%m-%d')
     df_running_specs = df_running_specs[(df_running_specs["date_datetime"] >= time_from_floored) & (df_running_specs["date_datetime"] <= time_to_ceiled)]
@@ -43,6 +46,8 @@ def get_timetable(time_from, time_to, locations, source_file="../data/t21.csv"):
     # It would be preferable to use the uppehållstid to fill the NaN-values,
     # then each train blocks the departure/arrival track for at least uppehållstid
     df = df.dropna(subset=['time_start', 'time_end'])
+    df["orig"] = df.apply(lambda row: mapped[row["orig"]] if row["orig"] in mapped else row["orig"], axis=1)
+    df["dest"] = df.apply(lambda row: mapped[row["dest"]] if row["dest"] in mapped else row["dest"], axis=1)
 
     # Now on our way to select the precise relevant times
     df["time_end_hour"] = df["time_end"].str[0:2]
@@ -164,31 +169,108 @@ def detect_track_allocation_problems(t21, stations, log_file):
 # TODO first split train numbers into different ids, this function collapses under back-and-forth behavior
 # TODO verify that no trains start and end in the linjeplats, the function also collapses then
 def remove_linjeplatser(t21, linjeplatser):
-    for linjeplats in linjeplatser:
-        t21_to_change = t21[(t21["orig"] == linjeplats) | (t21["dest"] == linjeplats)]
-        train_ixs = t21_to_change["train_ix"].drop_duplicates().tolist()
+    for k in linjeplatser:
+        for segment in linjeplatser[k], list(reversed(linjeplatser[k])):
+            print(segment, segment[0], segment[1], segment[-2], segment[-1])
 
-        for train_ix in train_ixs:
-            relevant_df = t21_to_change[t21_to_change["train_ix"] == train_ix]
+            todo_change = {}
+            t21_to_change = t21[((t21["orig"].isin(segment)) & (t21["dest"].isin(segment)))].sort_values(by=["train_ix", "time_start_corrected", "time_end_corrected"])
+
+            default_set = False
             first_index = None
-            other_indices = []
+            indices_to_remove = []
             last_dest = ""
             last_time = ""
             last_time_corr = ""
+            last_track = ""
 
-            for index, row in relevant_df.iterrows():
-                if first_index is None:
+            for index, row in t21_to_change.iterrows():
+                orig = row["orig"]
+                dest = row["dest"]
+
+                if orig == segment[0] and dest == segment[1]:
+                    # print("starting!", index, start, row["train_id"], row["train_ix"])
+                    default_set = True
                     first_index = index
-                else:
-                    other_indices += [index]
+                    if row["track_id"] in ["U1", "N1"]:
+                        last_track = row["track_id"][0]
+                    else:
+                        last_track = row["track_id"]
 
-                last_dest = row["dest"]
-                last_time = row["time_end"]
-                last_time_corr = row["time_end_corrected"]
-            t21.loc[first_index, ["dest", "time_end", "time_end_corrected"]] = [last_dest, last_time, last_time_corr]
-            t21.drop(other_indices, inplace=True)
+                elif default_set and orig == segment[-2] and dest == segment[-1]:
+                    # print("ending!", index, start, row["train_id"], row["train_ix"])
+                    indices_to_remove += [index]
+                    if row["track_id"] in ["U", "N"] and (orig != "Vr" or dest != "Hgö"):
+                        last_track = row["track_id"]
+                    if row["track_id"] in ["U1", "N1"]:
+                        last_track = row["track_id"][0]
+
+                    last_dest = row["dest"]
+                    last_time = row["time_end"]
+                    last_time_corr = row["time_end_corrected"]
+
+                    # print(row["train_id"], row["train_ix"], first_index, [last_dest, last_time, last_time_corr, last_track])
+
+                    # print(t21.iloc[first_index])
+                    todo_change[first_index] = [last_dest, last_time, last_time_corr, last_track]
+                    # t21.loc[first_index, ["dest", "time_end", "time_end_corrected", "track_id"]] = [last_dest, last_time, last_time_corr, last_track]
+                    # print(t21.iloc[first_index])
+
+                    default_set = False
+
+                else:
+                    default_set = False
+
+            for i in todo_change:
+                # print(i, todo_change[i])
+                t21.loc[i, ["dest", "time_end", "time_end_corrected", "track_id"]] = todo_change[i]
+            t21.drop(indices_to_remove, inplace=True)
 
     return t21
+
+        # print(row["train_id"], row["train_ix"], row["orig"], row["time_start_corrected"], row["dest"], row["time_end_corrected"])
+
+
+        #
+        # t21 = t21[(~t21["dest"].isnull()) | ((~t21["orig"].isin(interior_segment)) & (t21["dest"].isnull()))]
+        # t21_to_change = t21[(t21["orig"].isin(segment)) (t21["dest"].isin(segment))].sort_values(by=["train_ix", "time_start_corrected", "time_end_corrected"])
+
+        # for index, row in t21_to_change.iterrows():
+        #     print(row["train_id"], row["train_ix"], row["orig"], row["time_start_corrected"], row["dest"], row["time_end_corrected"])
+        #
+        # raise Exception
+        #
+        # train_ixs = t21_to_change["train_ix"].drop_duplicates().tolist()
+        #
+        # for train_ix in train_ixs:
+        #     dates = t21_to_change[t21_to_change["train_ix"] == train_ix]["date"].drop_duplicates().tolist()
+        #
+        #     for date in dates:
+        #         relevant_df = t21_to_change[(t21_to_change["train_ix"] == train_ix) & (t21_to_change["date"] == date)]
+        #         first_index = None
+        #         other_indices = []
+        #         last_dest = ""
+        #         last_time = ""
+        #         last_time_corr = ""
+        #         last_track = ""
+        #
+        #         for index, row in relevant_df.iterrows():
+        #             if first_index is None:
+        #                 first_index = index
+        #                 last_track = row["track_id"]
+        #             else:
+        #                 other_indices += [index]
+        #
+        #             if row["track_id"] in ["U", "N"]:
+        #                 last_track = row["track_id"]
+        #
+        #             last_dest = row["dest"]
+        #             last_time = row["time_end"]
+        #             last_time_corr = row["time_end_corrected"]
+        #
+        #         t21.loc[first_index, ["dest", "time_end", "time_end_corrected", "track_id"]] = [last_dest, last_time, last_time_corr, last_track]
+        #         t21.drop(other_indices, inplace=True)
+    #
 
 
 # Reads running times input file and converts it to a usable dictionary
@@ -233,7 +315,7 @@ def get_running_times(running_times_file, linjeplatser, speed_profiles):
                         runtime += running_time[(route[-2], route[-1], "r", rs_end)]
 
                         # Add all running times on the intermediate segments if multiple linjeplatser follow each other
-                        for i in range(len(route) - 2):
+                        for i in range(len(route) - 3):
                             runtime += running_time[(route[i+1], route[i+2], "r", "r")]
 
                         # Set result
