@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+from queue import PriorityQueue
 
 import numpy as np
 import pandas as pd
@@ -18,6 +19,11 @@ from src.general_utils import obj, print_runtime
 # TODO Test first if it is a predefined exception,
 # TODO i.e., single-track line with smaller blocks.
 
+
+def all_intermediate_times(start, end, diff):
+    first_start = start + timedelta(seconds=((diff - start.second) % diff))
+    print(first_start)
+    return [first_start + timedelta(seconds=diff*i) for i in range(int((end-start).total_seconds()/diff) + 1) if first_start + timedelta(seconds=diff*i) <= end]
 
 def get_segment_type_from_row(row):
     return get_segment_type_from_values(row["dest"], row["track_id"])
@@ -41,6 +47,74 @@ def get_key(orig, dest, track_id):
         return orig + "/" + track_id
     return min(orig, dest) + "-" + max(orig, dest) + "_" + track_id
 
+"""
+def extended_graph_get_A_star_path(infra, train_to_insert, speed_profile, running_time_all_profiles, t21, time_from, time_to, train_route, free_space_dict_stations, free_space_dict_segments, free_space_dict_transitions, config):
+    print(free_space_dict_transitions.keys())
+    running_time = running_time_all_profiles[speed_profile]
+    segments = [(train_route[i], train_route[i + 1]) for i in range(len(train_route) - 1)]
+    print(time_to)
+
+    # Get minimum runtimes, i.e., our lowerbound for the travel time until the destination
+    next_loc = {}
+    min_runtime = {}
+    reversed_route = list(reversed(train_route))
+    last_tpl = reversed_route[0]
+    total_runtime = 0
+    min_runtime[last_tpl] = 0
+    for tpl in reversed_route[1:]:
+        total_runtime += int(running_time[(tpl, last_tpl, "r", "r")])
+        min_runtime[tpl] = total_runtime
+        next_loc[tpl] = last_tpl
+        last_tpl = tpl
+
+    q = PriorityQueue()
+    first_loc = train_route[0]
+
+    for track_id in infra.stations[first_loc].tracks:
+        free_spaces = free_space_dict_stations[(first_loc, track_id)]
+        # print(first_loc, track_id, free_spaces)
+        for interval in free_spaces:
+            diff = int((interval.end - interval.start).total_seconds())
+            for timestamp in all_intermediate_times(interval.start, interval.end, 1):
+                q.put(((timestamp + timedelta(seconds=min_runtime[first_loc]), 2), (timestamp, first_loc, "s", track_id)))
+
+    time_and_prio, location_tuple = q.get()
+    last_h, last_prio = time_and_prio
+    last_time_stamp = location_tuple[0]
+    last_loc = location_tuple[1]
+    last_startstop = location_tuple[2]
+    last_track = location_tuple[3]
+
+    last_interval_keys_stations = {}
+    last_interval_keys_segments = {}
+    last_interval_keys_transitions = {}
+
+    # A* algorithm, which is a bit of a pain due to the different states
+    while last_loc != train_route[-1]:
+        if last_prio == 2:
+            for new_track in infra.N_stations[(last_loc, next_loc[last_loc], location_tuple[2])]:
+                if (last_loc, last_track, next_loc[last_loc], new_track) not in free_space_dict_transitions:
+                    q.put(((last_h, 1), (last_time_stamp, last_loc, last_startstop, new_track)))
+
+                elif (last_loc, last_track, next_loc[last_loc], new_track) in last_interval_keys_transitions and last_interval_keys_transitions[(last_loc, last_track, next_loc[last_loc], new_track)].start <= last_time_stamp <= last_interval_keys_transitions[(last_loc, last_track, next_loc[last_loc], new_track)].end:
+                    q.put(((last_h, 1), (last_time_stamp, last_loc, last_startstop, new_track)))
+                else:
+                    for curr_interval in free_space_dict_transitions[]
+
+        if last_prio == 1:
+
+
+        time_and_prio, location_tuple = q.get()
+        last_h, last_prio = time_and_prio
+        last_time_stamp = location_tuple[0]
+        last_loc = location_tuple[1]
+        last_startstop = location_tuple[2]
+        last_track = location_tuple[3]
+
+        # last_loc
+
+    return "done"
+"""
 
 def generate_candidate_paths(infra, train_to_insert, speed_profile, running_time_all_profiles, t21, time_from, time_to, train_route, output_file, filter_close_paths, free_space_dict_stations, free_space_dict_segments, free_space_dict_transitions, log_file="../out/log.csv", req_dep=0, req_arr=0, add_to_t21=False, config={}, only_fastest=False):
 
